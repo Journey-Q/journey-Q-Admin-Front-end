@@ -48,13 +48,16 @@ const Login = () => {
   }, [navigate]);
 
   // API Base URL
-  const API_BASE_URL = 'http://localhost:8080/api';
+  const API_BASE_URL = 'http://localhost:8080/admin';
+    // const API_BASE_URL = 'https://journeyqapigateway-production.up.railway.app/api/service/admin';
+    // const API_BASE_URL = 'https://serviceprovidersservice-production.up.railway.app/admin';
 
+    
   // Setup default admin
   const handleSetupAdmin = async () => {
     setSetupLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/setup`, {
+      const response = await fetch(`${API_BASE_URL}/auth/setup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +93,7 @@ const Login = () => {
         password,
       };
 
-      const response = await fetch(`${API_BASE_URL}/admin/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,74 +123,6 @@ const Login = () => {
     }
   };
 
-  // return (
-  //   <div className="min-h-screen bg-gradient-to-br from-[#0088cc] to-[#006aa3] flex items-center justify-center p-4">
-  //     <Card className="w-full max-w-md p-8 shadow-2xl border-0">
-  //       <div className="text-center mb-8">
-  //         <div className="w-16 h-16 bg-[#0088cc] rounded-full flex items-center justify-center mx-auto mb-4">
-  //           <span className="text-white font-bold text-2xl">J</span>
-  //         </div>
-  //         <h1 className="text-3xl font-bold text-gray-900 mb-2">JourneyQ Admin</h1>
-  //         <p className="text-gray-600">Sign in to your admin dashboard</p>
-  //       </div>
-
-  //       <form onSubmit={handleLogin} className="space-y-6">
-  //         <div className="space-y-2">
-  //           <Label htmlFor="email">Email Address</Label>
-  //           <Input
-  //             id="email"
-  //             type="email"
-  //             placeholder="admin@serviceproviders.com"
-  //             value={email}
-  //             onChange={(e) => setEmail(e.target.value)}
-  //             required
-  //             className="h-12"
-  //           />
-  //         </div>
-
-  //         <div className="space-y-2">
-  //           <Label htmlFor="password">Password</Label>
-  //           <Input
-  //             id="password"
-  //             type="password"
-  //             placeholder="Enter your password"
-  //             value={password}
-  //             onChange={(e) => setPassword(e.target.value)}
-  //             required
-  //             className="h-12"
-  //           />
-  //         </div>
-
-  //         <Button 
-  //           type="submit" 
-  //           className="w-full h-12 bg-[#0088cc] hover:bg-[#006aa3] text-white font-semibold"
-  //           disabled={loading}
-  //         >
-  //           {loading ? 'Signing in...' : 'Sign In'}
-  //         </Button>
-  //       </form>
-
-  //       <div className="mt-6 space-y-4">
-  //         <div className="p-4 bg-blue-50 rounded-lg">
-  //           <p className="text-sm text-blue-800">
-  //             <strong>Default Credentials:</strong><br />
-  //             Email: admin@serviceproviders.com<br />
-  //             Password: admin123
-  //           </p>
-  //         </div>
-
-  //         <Button 
-  //           onClick={handleSetupAdmin}
-  //           variant="outline"
-  //           className="w-full h-10"
-  //           disabled={setupLoading}
-  //         >
-  //           {setupLoading ? 'Setting up...' : 'Setup Default Admin'}
-  //         </Button>
-  //       </div>
-  //     </Card>
-  //   </div>
-  // );
   return (
   <div className="min-h-screen bg-gradient-to-br from-[#E5E7EB] to-[#D1D5DB] flex items-center justify-center p-4">
     <Card className="w-full max-w-md p-8 shadow-lg border border-[#A9A9A9] bg-white rounded-xl">

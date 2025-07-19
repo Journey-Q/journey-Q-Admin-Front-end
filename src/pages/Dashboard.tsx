@@ -324,13 +324,13 @@ const Dashboard = () => {
           
           <div className="flex items-center space-x-3">
             {/* Connection Status */}
-            <div className="flex items-center space-x-2 text-sm">
+            {/* <div className="flex items-center space-x-2 text-sm">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-gray-600">Backend Connected</span>
-            </div>
+            </div> */}
             
             {/* API Test Button */}
-            <Button 
+            {/* <Button 
               onClick={testAPI}
               variant="outline"
               size="sm"
@@ -343,10 +343,10 @@ const Dashboard = () => {
                 <CheckCircle className="w-4 h-4 mr-1" />
               )}
               Test API
-            </Button>
+            </Button> */}
             
             {/* Refresh Profile */}
-            <Button 
+            {/* <Button 
               onClick={refreshProfile}
               variant="outline"
               size="sm"
@@ -354,7 +354,7 @@ const Dashboard = () => {
             >
               <RefreshCw className="w-4 h-4 mr-1" />
               Refresh
-            </Button>
+            </Button> */}
             
             {/* Logout Button */}
             <Button 
@@ -371,7 +371,7 @@ const Dashboard = () => {
       </div>
 
       {/* Admin Profile Banner */}
-      {adminData && (
+      {/* {adminData && (
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
           <div className="flex items-center justify-between text-white">
             <div className="flex items-center space-x-4">
@@ -403,7 +403,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Original Dashboard Content */}
       <div className="p-8 space-y-8">
