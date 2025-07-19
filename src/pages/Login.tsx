@@ -48,9 +48,9 @@ const Login = () => {
   }, [navigate]);
 
   // API Base URL
-  const API_BASE_URL = 'http://localhost:8080/admin';
+  // const API_BASE_URL = 'http://localhost:8080/admin';
     // const API_BASE_URL = 'https://journeyqapigateway-production.up.railway.app/api/service/admin';
-    // const API_BASE_URL = 'https://serviceprovidersservice-production.up.railway.app/admin';
+    const API_BASE_URL = 'https://serviceprovidersservice-production.up.railway.app/admin';
 
     
   // Setup default admin
