@@ -1,485 +1,556 @@
-"use client";
-
-import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Search, User, Building, Navigation, Car, UserCheck, Users,
-  Loader2, AlertCircle, RefreshCw, CheckCircle, Ban, Phone, X
-} from 'lucide-react';
+"use client"
+import { useState, useEffect } from "react"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  Search,
+  User,
+  Building,
+  Navigation,
+  Car,
+  UserCheck,
+  Users,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  CheckCircle,
+  Ban,
+  Phone,
+  X,
+} from "lucide-react"
 
 // Types
 interface Provider {
-  id: number;
-  username: string;
-  email: string;
-  serviceType: 'HOTEL' | 'TOUR_GUIDE' | 'TRAVEL_AGENT';
-  businessRegistrationNumber: string;
-  address: string;
-  contactNo: string;
-  isApproved: boolean | null;
-  isActive: boolean;
-  createdAt: string;
+  id: number
+  username: string
+  email: string
+  serviceType: "HOTEL" | "TOUR_GUIDE" | "TRAVEL_AGENT"
+  businessRegistrationNumber: string
+  address: string
+  contactNo: string
+  isApproved: boolean | null
+  isActive: boolean
+  createdAt: string
 }
 
 interface DashboardStats {
-  totalProviders: number;
-  approvedProviders: number;
-  pendingProviders: number;
-  suspendedProviders: number;
-  rejectedProviders: number;
-  hotelCount: number;
-  tourCount: number;
-  transportCount: number;
+  totalProviders: number
+  approvedProviders: number
+  pendingProviders: number
+  suspendedProviders: number
+  rejectedProviders: number
+  hotelCount: number
+  tourCount: number
+  transportCount: number
 }
 
 interface ApiResponse {
-  providers: Provider[];
-  currentPage: number;
-  totalItems: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
+  providers: Provider[]
+  currentPage: number
+  totalItems: number
+  totalPages: number
+  hasNext: boolean
+  hasPrevious: boolean
 }
 
 const Providers = () => {
   // State management
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
-  const [activeTab, setActiveTab] = useState('approval');
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [filteredProviders, setFilteredProviders] = useState<Provider[]>([]);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalItems, setTotalItems] = useState(0);
-  const [pageSize] = useState(10);
-  const [actionLoading, setActionLoading] = useState<{ [key: number]: string }>({});
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterType, setFilterType] = useState("all")
+  const [filterStatus, setFilterStatus] = useState("all")
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
+  const [activeTab, setActiveTab] = useState("approval")
+  const [providers, setProviders] = useState<Provider[]>([])
+  const [filteredProviders, setFilteredProviders] = useState<Provider[]>([])
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalItems, setTotalItems] = useState(0)
+  const [pageSize] = useState(10)
+  const [actionLoading, setActionLoading] = useState<{ [key: number]: string }>({})
 
   // Get auth token from localStorage
   const getAuthToken = () => {
     return (
-      localStorage.getItem('admin_token') ||
-      localStorage.getItem('adminToken') ||
-      localStorage.getItem('authToken') ||
-      localStorage.getItem('accessToken') ||
-      localStorage.getItem('token') ||
-      ''
-    );
-  };
+      localStorage.getItem("admin_token") ||
+      localStorage.getItem("adminToken") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("token") ||
+      ""
+    )
+  }
 
   // API calls
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    const token = getAuthToken();
-    const baseURL = 'https://serviceprovidersservice-production.up.railway.app/admin/auth';
-    
+    const token = getAuthToken()
+    const baseURL = "https://serviceprovidersservice-production.up.railway.app/admin/auth"
+
     try {
       const response = await fetch(`${baseURL}${endpoint}`, {
         ...options,
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
           ...options.headers,
         },
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
-        console.error('API error response:', errorData);
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ message: "Network error" }))
+        console.error("API error response:", errorData)
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
       }
 
-      return response.json();
+      return response.json()
     } catch (err) {
-      console.error('API call failed:', err);
-      throw err;
+      console.error("API call failed:", err)
+      throw err
     }
-  };
+  }
 
-  // Fetch dashboard stats
-  const fetchDashboardStats = async () => {
-    try {
-      const data = await apiCall('/dashboard/stats');
-      setStats(data);
-    } catch (err) {
-      console.error('Error fetching dashboard stats:', err);
-      setError('Failed to load dashboard statistics');
+  // Calculate dashboard stats from providers data
+  const calculateDashboardStats = (providersData: Provider[]) => {
+    const stats: DashboardStats = {
+      totalProviders: providersData.length,
+      approvedProviders: 0,
+      pendingProviders: 0,
+      suspendedProviders: 0,
+      rejectedProviders: 0,
+      hotelCount: 0,
+      tourCount: 0,
+      transportCount: 0,
     }
-  };
+
+    providersData.forEach((provider) => {
+      // Status counts
+      if (provider.isApproved === null) {
+        stats.pendingProviders++
+      } else if (provider.isApproved === false) {
+        stats.rejectedProviders++
+      } else if (provider.isApproved === true) {
+        if (provider.isActive) {
+          stats.approvedProviders++
+        } else {
+          stats.suspendedProviders++
+        }
+      }
+
+      // Service type counts (only count approved providers)
+      if (provider.isApproved === true) {
+        switch (provider.serviceType) {
+          case "HOTEL":
+            stats.hotelCount++
+            break
+          case "TOUR_GUIDE":
+            stats.tourCount++
+            break
+          case "TRAVEL_AGENT":
+            stats.transportCount++
+            break
+        }
+      }
+    })
+
+    return stats
+  }
+
+  // Fetch dashboard stats from providers data
+  const fetchDashboardStats = () => {
+    try {
+      const calculatedStats = calculateDashboardStats(providers)
+      setStats(calculatedStats)
+    } catch (err) {
+      console.error("Error calculating dashboard stats:", err)
+      setError("Failed to calculate dashboard statistics")
+    }
+  }
 
   // Mock providers for fallback
   const setMockProviders = () => {
     setProviders([
       {
         id: 1,
-        username: 'provider1',
-        email: 'provider1@example.com',
-        serviceType: 'HOTEL',
-        businessRegistrationNumber: 'BRN123',
-        address: '123 Main St',
-        contactNo: '1234567890',
+        username: "provider1",
+        email: "provider1@example.com",
+        serviceType: "HOTEL",
+        businessRegistrationNumber: "BRN123",
+        address: "123 Main St",
+        contactNo: "1234567890",
         isApproved: null,
         isActive: true,
-        createdAt: '2025-07-20T15:54:00',
+        createdAt: "2025-07-20T15:54:00",
       },
       {
         id: 2,
-        username: 'provider2',
-        email: 'provider2@example.com',
-        serviceType: 'TOUR_GUIDE',
-        businessRegistrationNumber: 'BRN456',
-        address: '456 Oak St',
-        contactNo: '0987654321',
+        username: "provider2",
+        email: "provider2@example.com",
+        serviceType: "TOUR_GUIDE",
+        businessRegistrationNumber: "BRN456",
+        address: "456 Oak St",
+        contactNo: "0987654321",
         isApproved: true,
         isActive: true,
-        createdAt: '2025-07-19T10:30:00',
+        createdAt: "2025-07-19T10:30:00",
       },
       {
         id: 3,
-        username: 'provider3',
-        email: 'provider3@example.com',
-        serviceType: 'TRAVEL_AGENT',
-        businessRegistrationNumber: 'BRN789',
-        address: '789 Pine St',
-        contactNo: '1122334455',
+        username: "provider3",
+        email: "provider3@example.com",
+        serviceType: "TRAVEL_AGENT",
+        businessRegistrationNumber: "BRN789",
+        address: "789 Pine St",
+        contactNo: "1122334455",
         isApproved: false,
         isActive: false,
-        createdAt: '2025-07-18T14:20:00',
+        createdAt: "2025-07-18T14:20:00",
       },
-    ]);
-    setTotalPages(1);
-    setTotalItems(3);
-  };
+    ])
+    setTotalPages(1)
+    setTotalItems(3)
+  }
 
   // Fetch all providers
-  const fetchProviders = async () => {
-    setLoading(true);
-    setError(null);
-
+  const fetchProviders = async (forceRefresh = false) => {
+    if (!forceRefresh) {
+      setLoading(true)
+    }
+    setError(null)
     try {
       const params = new URLSearchParams({
-        page: currentPage.toString(),
-        size: pageSize.toString(),
+        page: "0", // Always fetch from page 0 to get all data
+        size: "1000", // Fetch more data to ensure we get all providers
         ...(searchTerm && { search: searchTerm }),
-      });
+      })
 
-      const endpoint = '/all_service';
-      const data: ApiResponse = await apiCall(endpoint);
-      console.log('API Response:', data);
-      setProviders(data.providers || []);
-      setTotalPages(data.totalPages || 0);
-      setTotalItems(data.totalItems || 0);
+      const endpoint = "/all_service"
+      const data: ApiResponse = await apiCall(`${endpoint}?${params}`)
+      console.log("API Response:", data)
+
+      const newProviders = data.providers || []
+      setProviders(newProviders)
+      setTotalPages(data.totalPages || 0)
+      setTotalItems(data.totalItems || 0)
+
+      // Reset to page 0 after actions
+      if (forceRefresh) {
+        setCurrentPage(0)
+      }
     } catch (err) {
-      console.error('Error fetching providers:', err);
-      setError('Network error. Showing sample data.');
-      setMockProviders();
+      console.error("Error fetching providers:", err)
+      setError("Network error. Showing sample data.")
+      setMockProviders()
     } finally {
-      setLoading(false);
+      if (!forceRefresh) {
+        setLoading(false)
+      }
     }
-  };
+  }
 
   // Filter providers on the frontend
   useEffect(() => {
-    let filtered = providers;
+    let filtered = providers
 
     // Apply tab-based filtering
-    if (activeTab === 'approval') {
-      filtered = filtered.filter(provider => provider.isApproved === null);
-    } else if (activeTab === 'existing') {
-      filtered = filtered.filter(provider => provider.isApproved === true);
-      if (filterStatus === 'approved') {
-        filtered = filtered.filter(provider => provider.isActive);
-      } else if (filterStatus === 'suspended') {
-        filtered = filtered.filter(provider => !provider.isActive);
+    if (activeTab === "approval") {
+      filtered = filtered.filter((provider) => provider.isApproved === null)
+    } else if (activeTab === "existing") {
+      filtered = filtered.filter((provider) => provider.isApproved === true)
+      if (filterStatus === "approved") {
+        filtered = filtered.filter((provider) => provider.isActive)
+      } else if (filterStatus === "suspended") {
+        filtered = filtered.filter((provider) => !provider.isActive)
       }
-    } else if (activeTab === 'rejected') {
-      filtered = filtered.filter(provider => provider.isApproved === false);
+    } else if (activeTab === "rejected") {
+      filtered = filtered.filter((provider) => provider.isApproved === false)
     }
 
     // Apply type filter
-    if (filterType !== 'all') {
-      filtered = filtered.filter(provider => provider.serviceType.toLowerCase() === filterType);
+    if (filterType !== "all") {
+      filtered = filtered.filter((provider) => provider.serviceType.toLowerCase() === filterType)
     }
 
     // Apply search filter
     if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
+      const lowerSearch = searchTerm.toLowerCase()
       filtered = filtered.filter(
-        provider =>
+        (provider) =>
           provider.username.toLowerCase().includes(lowerSearch) ||
           provider.email.toLowerCase().includes(lowerSearch) ||
-          provider.businessRegistrationNumber.toLowerCase().includes(lowerSearch)
-      );
+          provider.businessRegistrationNumber.toLowerCase().includes(lowerSearch),
+      )
     }
 
-    setFilteredProviders(filtered);
-    setTotalItems(filtered.length);
-    setTotalPages(Math.ceil(filtered.length / pageSize));
-  }, [providers, activeTab, filterType, filterStatus, searchTerm, pageSize]);
+    setFilteredProviders(filtered)
+    setTotalItems(filtered.length)
+    setTotalPages(Math.ceil(filtered.length / pageSize))
+  }, [providers, activeTab, filterType, filterStatus, searchTerm, pageSize])
 
   // Provider actions
   const approveProvider = async (providerId: number) => {
-    setActionLoading(prev => ({ ...prev, [providerId]: 'approving' }));
+    setActionLoading((prev) => ({ ...prev, [providerId]: "approving" }))
     try {
+      // Make the API call
       await apiCall(`/providers/${providerId}/approve`, {
-        method: 'PUT',
-      });
-      
-      // Close modal immediately if open
-      if (selectedProvider?.id === providerId) {
-        setSelectedProvider(null);
-      }
-      
+        method: "PUT",
+      })
+
       // Clear any previous errors
-      setError(null);
-      
-      // Force immediate refresh by calling fetchProviders directly
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({
-          page: '0',
-          size: pageSize.toString(),
-          ...(searchTerm && { search: searchTerm }),
-        });
+      setError(null)
 
-        const endpoint = '/all_service';
-        const data: ApiResponse = await apiCall(endpoint);
-        setProviders(data.providers || []);
-        setTotalPages(data.totalPages || 0);
-        setTotalItems(data.totalItems || 0);
-        setCurrentPage(0);
-      } catch (fetchErr) {
-        console.error('Error refreshing providers:', fetchErr);
-        setMockProviders();
-      } finally {
-        setLoading(false);
+      // Immediately update the local state to reflect the change
+      setProviders((prevProviders) =>
+        prevProviders.map((provider) =>
+          provider.id === providerId ? { ...provider, isApproved: true, isActive: true } : provider,
+        ),
+      )
+
+      // Update selectedProvider if it's the same provider
+      if (selectedProvider?.id === providerId) {
+        setSelectedProvider((prev) => (prev ? { ...prev, isApproved: true, isActive: true } : null))
       }
-      
-      // Also refresh stats
-      try {
-        const statsData = await apiCall('/dashboard/stats');
-        setStats(statsData);
-      } catch (statsErr) {
-        console.error('Error refreshing stats:', statsErr);
-      }
-      
+
+      // Also refresh from backend to ensure data consistency
+      setTimeout(() => {
+        fetchProviders(true)
+      }, 500)
     } catch (err) {
-      console.error('Error approving provider:', err);
-      setError('Failed to approve provider');
+      console.error("Error approving provider:", err)
+      setError("Failed to approve provider")
+      // Refresh data even on error to ensure consistency
+      fetchProviders(true)
     } finally {
-      setActionLoading(prev => {
-        const { [providerId]: removed, ...rest } = prev;
-        return rest;
-      });
+      setActionLoading((prev) => {
+        const { [providerId]: removed, ...rest } = prev
+        return rest
+      })
     }
-  };
+  }
 
-  const rejectProvider = async (providerId: number, reason: string = '') => {
-    setActionLoading(prev => ({ ...prev, [providerId]: 'rejecting' }));
+  const rejectProvider = async (providerId: number, reason = "") => {
+    setActionLoading((prev) => ({ ...prev, [providerId]: "rejecting" }))
     try {
+      // Make the API call
       await apiCall(`/providers/${providerId}/reject`, {
-        method: 'PUT',
+        method: "PUT",
         body: JSON.stringify({ reason }),
-      });
-      
-      // Close modal immediately if open
-      if (selectedProvider?.id === providerId) {
-        setSelectedProvider(null);
-      }
-      
+      })
+
       // Clear any previous errors
-      setError(null);
-      
-      // Force immediate refresh by calling the API directly
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({
-          page: '0',
-          size: pageSize.toString(),
-          ...(searchTerm && { search: searchTerm }),
-        });
+      setError(null)
 
-        const endpoint = '/all_service';
-        const data: ApiResponse = await apiCall(endpoint);
-        setProviders(data.providers || []);
-        setTotalPages(data.totalPages || 0);
-        setTotalItems(data.totalItems || 0);
-        setCurrentPage(0);
-      } catch (fetchErr) {
-        console.error('Error refreshing providers:', fetchErr);
-        setMockProviders();
-      } finally {
-        setLoading(false);
+      // Immediately update the local state to reflect the change
+      setProviders((prevProviders) =>
+        prevProviders.map((provider) =>
+          provider.id === providerId ? { ...provider, isApproved: false, isActive: false } : provider,
+        ),
+      )
+
+      // Update selectedProvider if it's the same provider
+      if (selectedProvider?.id === providerId) {
+        setSelectedProvider((prev) => (prev ? { ...prev, isApproved: false, isActive: false } : null))
       }
-      
-      // Also refresh stats
-      try {
-        const statsData = await apiCall('/dashboard/stats');
-        setStats(statsData);
-      } catch (statsErr) {
-        console.error('Error refreshing stats:', statsErr);
-      }
-      
+
+      // Also refresh from backend to ensure data consistency
+      setTimeout(() => {
+        fetchProviders(true)
+      }, 500)
     } catch (err) {
-      console.error('Error rejecting provider:', err);
-      setError('Failed to reject provider');
+      console.error("Error rejecting provider:", err)
+      setError("Failed to reject provider")
+      // Refresh data even on error to ensure consistency
+      fetchProviders(true)
     } finally {
-      setActionLoading(prev => {
-        const { [providerId]: removed, ...rest } = prev;
-        return rest;
-      });
+      setActionLoading((prev) => {
+        const { [providerId]: removed, ...rest } = prev
+        return rest
+      })
     }
-  };
+  }
 
-  const suspendProvider = async (providerId: number, reason: string = '') => {
-    setActionLoading(prev => ({ ...prev, [providerId]: 'suspending' }));
+  const suspendProvider = async (providerId: number, reason = "") => {
+    setActionLoading((prev) => ({ ...prev, [providerId]: "suspending" }))
     try {
       await apiCall(`/providers/${providerId}/suspend`, {
-        method: 'PUT',
+        method: "PUT",
         body: JSON.stringify({ reason }),
-      });
-      
-      // Close modal immediately if open
+      })
+
+      // Immediately update the local state to reflect the change
+      setProviders((prevProviders) =>
+        prevProviders.map((provider) => (provider.id === providerId ? { ...provider, isActive: false } : provider)),
+      )
+
+      // Update selectedProvider if it's the same provider
       if (selectedProvider?.id === providerId) {
-        setSelectedProvider(null);
+        setSelectedProvider((prev) => (prev ? { ...prev, isActive: false } : null))
       }
-      
-      // Refresh all data immediately
-      await Promise.all([fetchProviders(), fetchDashboardStats()]);
-      
-      setError(null); // Clear any previous errors
-      
-      // Reset current page to 0 to ensure we see the updated data
-      setCurrentPage(0);
-      
+
+      // Also refresh from backend to ensure data consistency
+      setTimeout(() => {
+        fetchProviders(true)
+      }, 500)
+
+      setError(null) // Clear any previous errors
     } catch (err) {
-      console.error('Error suspending provider:', err);
-      setError('Failed to suspend provider');
+      console.error("Error suspending provider:", err)
+      setError("Failed to suspend provider")
+      // Refresh data even on error to ensure consistency
+      fetchProviders(true)
     } finally {
-      setActionLoading(prev => {
-        const { [providerId]: removed, ...rest } = prev;
-        return rest;
-      });
+      setActionLoading((prev) => {
+        const { [providerId]: removed, ...rest } = prev
+        return rest
+      })
     }
-  };
+  }
 
   const reactivateProvider = async (providerId: number) => {
-    setActionLoading(prev => ({ ...prev, [providerId]: 'reactivating' }));
+    setActionLoading((prev) => ({ ...prev, [providerId]: "reactivating" }))
     try {
       await apiCall(`/providers/${providerId}/reactivate`, {
-        method: 'PUT',
-      });
-      
-      // Close modal immediately if open
+        method: "PUT",
+      })
+
+      // Immediately update the local state to reflect the change
+      setProviders((prevProviders) =>
+        prevProviders.map((provider) => (provider.id === providerId ? { ...provider, isActive: true } : provider)),
+      )
+
+      // Update selectedProvider if it's the same provider
       if (selectedProvider?.id === providerId) {
-        setSelectedProvider(null);
+        setSelectedProvider((prev) => (prev ? { ...prev, isActive: true } : null))
       }
-      
-      // Refresh all data immediately
-      await Promise.all([fetchProviders(), fetchDashboardStats()]);
-      
-      setError(null); // Clear any previous errors
-      
-      // Reset current page to 0 to ensure we see the updated data
-      setCurrentPage(0);
-      
+
+      // Also refresh from backend to ensure data consistency
+      setTimeout(() => {
+        fetchProviders(true)
+      }, 500)
+
+      setError(null) // Clear any previous errors
     } catch (err) {
-      console.error('Error reactivating provider:', err);
-      setError('Failed to reactivate provider');
+      console.error("Error reactivating provider:", err)
+      setError("Failed to reactivate provider")
+      // Refresh data even on error to ensure consistency
+      fetchProviders(true)
     } finally {
-      setActionLoading(prev => {
-        const { [providerId]: removed, ...rest } = prev;
-        return rest;
-      });
+      setActionLoading((prev) => {
+        const { [providerId]: removed, ...rest } = prev
+        return rest
+      })
     }
-  };
+  }
 
   // Effects
   useEffect(() => {
-    fetchDashboardStats();
-  }, []);
+    // Calculate stats whenever providers data changes
+    fetchDashboardStats()
+  }, [providers])
 
   useEffect(() => {
-    setCurrentPage(0);
-  }, [activeTab, filterType, filterStatus, searchTerm]);
+    setCurrentPage(0)
+  }, [activeTab, filterType, filterStatus, searchTerm])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      fetchProviders();
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm, currentPage]);
+      fetchProviders()
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm]) // Removed currentPage dependency to avoid unnecessary calls
 
   // Helper functions
   const getTypeBadgeClass = (type: string) => {
     switch (type) {
-      case 'HOTEL': return 'bg-blue-100 text-blue-800';
-      case 'TOUR_GUIDE': return 'bg-green-100 text-green-800';
-      case 'TRAVEL_AGENT': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "HOTEL":
+        return "bg-blue-100 text-blue-800"
+      case "TOUR_GUIDE":
+        return "bg-green-100 text-green-800"
+      case "TRAVEL_AGENT":
+        return "bg-purple-100 text-purple-800"
+      default:
+        return "bg-gray-100 text-gray-800"
     }
-  };
+  }
 
   const getStatusBadgeClass = (provider: Provider) => {
-    if (provider.isApproved === null) return 'bg-yellow-100 text-yellow-800';
-    if (provider.isApproved === false) return 'bg-red-100 text-red-800';
-    if (!provider.isActive) return 'bg-orange-100 text-orange-800';
-    return 'bg-green-100 text-green-800';
-  };
+    if (provider.isApproved === null) return "bg-yellow-100 text-yellow-800"
+    if (provider.isApproved === false) return "bg-red-100 text-red-800"
+    if (!provider.isActive) return "bg-orange-100 text-orange-800"
+    return "bg-green-100 text-green-800"
+  }
 
   const getStatusText = (provider: Provider) => {
-    if (provider.isApproved === null) return 'Pending';
-    if (provider.isApproved === false) return 'Rejected';
-    if (!provider.isActive) return 'Suspended';
-    return 'Approved';
-  };
+    if (provider.isApproved === null) return "Pending"
+    if (provider.isApproved === false) return "Rejected"
+    if (!provider.isActive) return "Suspended"
+    return "Approved"
+  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'HOTEL': return <Building className="w-4 h-4" />;
-      case 'TOUR_GUIDE': return <Navigation className="w-4 h-4" />;
-      case 'TRAVEL_AGENT': return <Car className="w-4 h-4" />;
-      default: return <User className="w-4 h-4" />;
+      case "HOTEL":
+        return <Building className="w-4 h-4" />
+      case "TOUR_GUIDE":
+        return <Navigation className="w-4 h-4" />
+      case "TRAVEL_AGENT":
+        return <Car className="w-4 h-4" />
+      default:
+        return <User className="w-4 h-4" />
     }
-  };
+  }
 
   const getTypeDisplayName = (type: string) => {
     switch (type) {
-      case 'HOTEL': return 'Hotel';
-      case 'TOUR_GUIDE': return 'Tour Guide';
-      case 'TRAVEL_AGENT': return 'Travel Agent';
-      default: return type;
+      case "HOTEL":
+        return "Hotel"
+      case "TOUR_GUIDE":
+        return "Tour Guide"
+      case "TRAVEL_AGENT":
+        return "Travel Agent"
+      default:
+        return type
     }
-  };
+  }
 
   const handleViewProvider = (provider: Provider) => {
-    setSelectedProvider(provider);
-  };
+    setSelectedProvider(provider)
+  }
 
   const handleCloseModal = () => {
-    setSelectedProvider(null);
-  };
+    setSelectedProvider(null)
+  }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
+
+  // Check if provider action buttons should be disabled
+  const isProviderActionDisabled = (provider: Provider, action: string) => {
+    const isLoading = !!actionLoading[provider.id]
+
+    switch (action) {
+      case "approve":
+        return isLoading || provider.isApproved === true
+      case "reject":
+        return isLoading || provider.isApproved === false
+      case "suspend":
+        return isLoading || !provider.isActive
+      case "reactivate":
+        return isLoading || provider.isActive
+      default:
+        return isLoading
+    }
+  }
 
   // Paginate filtered providers
-  const paginatedProviders = filteredProviders.slice(
-    currentPage * pageSize,
-    (currentPage + 1) * pageSize
-  );
+  const paginatedProviders = filteredProviders.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
 
   return (
     <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
@@ -489,12 +560,7 @@ const Providers = () => {
           <div className="flex items-center gap-2 text-red-800">
             <AlertCircle className="w-5 h-5" />
             <span>{error}</span>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={() => setError(null)}
-              className="ml-auto"
-            >
+            <Button size="sm" variant="outline" onClick={() => setError(null)} className="ml-auto">
               Dismiss
             </Button>
           </div>
@@ -514,6 +580,7 @@ const Providers = () => {
             </div>
           </div>
         </Card>
+
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
@@ -525,6 +592,7 @@ const Providers = () => {
             </div>
           </div>
         </Card>
+
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center">
@@ -536,6 +604,7 @@ const Providers = () => {
             </div>
           </div>
         </Card>
+
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
@@ -553,51 +622,45 @@ const Providers = () => {
       <Card className="bg-white shadow-lg border-0">
         <div className="flex border-b">
           <button
-            onClick={() => setActiveTab('approval')}
+            onClick={() => setActiveTab("approval")}
             className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
-              activeTab === 'approval' 
-                ? 'text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5' 
-                : 'text-gray-600 hover:text-gray-800'
+              activeTab === "approval"
+                ? "text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5"
+                : "text-gray-600 hover:text-gray-800"
             }`}
           >
             <UserCheck className="w-5 h-5" />
             Pending Approval
             {stats && stats.pendingProviders > 0 && (
-              <Badge className="bg-yellow-100 text-yellow-800 ml-2">
-                {stats.pendingProviders}
-              </Badge>
+              <Badge className="bg-yellow-100 text-yellow-800 ml-2">{stats.pendingProviders}</Badge>
             )}
           </button>
+
           <button
-            onClick={() => setActiveTab('existing')}
+            onClick={() => setActiveTab("existing")}
             className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
-              activeTab === 'existing' 
-                ? 'text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5' 
-                : 'text-gray-600 hover:text-gray-800'
+              activeTab === "existing"
+                ? "text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5"
+                : "text-gray-600 hover:text-gray-800"
             }`}
           >
             <Users className="w-5 h-5" />
             Approved Providers
-            {stats && (
-              <Badge className="bg-green-100 text-green-800 ml-2">
-                {stats.approvedProviders}
-              </Badge>
-            )}
+            {stats && <Badge className="bg-green-100 text-green-800 ml-2">{stats.approvedProviders}</Badge>}
           </button>
+
           <button
-            onClick={() => setActiveTab('rejected')}
+            onClick={() => setActiveTab("rejected")}
             className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
-              activeTab === 'rejected' 
-                ? 'text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5' 
-                : 'text-gray-600 hover:text-gray-800'
+              activeTab === "rejected"
+                ? "text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5"
+                : "text-gray-600 hover:text-gray-800"
             }`}
           >
             <X className="w-5 h-5" />
             Rejected Applications
             {stats && stats.rejectedProviders > 0 && (
-              <Badge className="bg-red-100 text-red-800 ml-2">
-                {stats.rejectedProviders}
-              </Badge>
+              <Badge className="bg-red-100 text-red-800 ml-2">{stats.rejectedProviders}</Badge>
             )}
           </button>
         </div>
@@ -616,6 +679,7 @@ const Providers = () => {
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0088cc] focus:border-transparent w-full"
             />
           </div>
+
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
@@ -626,7 +690,8 @@ const Providers = () => {
             <option value="tour_guide">Tour Guide</option>
             <option value="travel_agent">Travel Agent</option>
           </select>
-          {activeTab === 'existing' && (
+
+          {activeTab === "existing" && (
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -637,12 +702,9 @@ const Providers = () => {
               <option value="suspended">Suspended</option>
             </select>
           )}
-          <Button
-            onClick={fetchProviders}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+
+          <Button onClick={fetchProviders} variant="outline" className="flex items-center gap-2 bg-transparent">
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
@@ -650,21 +712,21 @@ const Providers = () => {
 
       {/* Content */}
       <Card className="p-6 bg-white shadow-lg border-0">
-        {activeTab === 'approval' && (
+        {activeTab === "approval" && (
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Pending Approvals</h3>
             <p className="text-gray-600">Review and approve new service providers</p>
           </div>
         )}
-        
-        {activeTab === 'existing' && (
+
+        {activeTab === "existing" && (
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Approved Providers</h3>
             <p className="text-gray-600">Manage approved service providers</p>
           </div>
         )}
 
-        {activeTab === 'rejected' && (
+        {activeTab === "rejected" && (
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Rejected Applications</h3>
             <p className="text-gray-600">View rejected service provider applications</p>
@@ -694,9 +756,12 @@ const Providers = () => {
                 <tbody>
                   {paginatedProviders.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="p-8 text-center text-gray-500">
-                        {activeTab === 'approval' ? 'No pending approvals' : 
-                         activeTab === 'rejected' ? 'No rejected applications' : 'No providers found'}
+                      <td colSpan={7} className="p-8 text-center text-gray-500">
+                        {activeTab === "approval"
+                          ? "No pending approvals"
+                          : activeTab === "rejected"
+                            ? "No rejected applications"
+                            : "No providers found"}
                       </td>
                     </tr>
                   ) : (
@@ -715,87 +780,83 @@ const Providers = () => {
                           </Badge>
                         </td>
                         <td className="p-3">
-                          <Badge className={getStatusBadgeClass(provider)}>
-                            {getStatusText(provider)}
-                          </Badge>
+                          <Badge className={getStatusBadgeClass(provider)}>{getStatusText(provider)}</Badge>
                         </td>
                         <td className="p-3">
-                          <span className="font-mono text-sm text-gray-700">
-                            {provider.businessRegistrationNumber}
-                          </span>
+                          <span className="font-mono text-sm text-gray-700">{provider.businessRegistrationNumber}</span>
                         </td>
                         <td className="p-3">
                           <p className="text-sm text-gray-600">{provider.contactNo}</p>
                         </td>
                         <td className="p-3">
-                          <span className="text-sm text-gray-600">
-                            {formatDate(provider.createdAt)}
-                          </span>
+                          <span className="text-sm text-gray-600">{formatDate(provider.createdAt)}</span>
                         </td>
                         <td className="p-3">
                           <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleViewProvider(provider)}
-                            >
+                            <Button size="sm" variant="outline" onClick={() => handleViewProvider(provider)}>
                               View
                             </Button>
-                            {activeTab === 'approval' && (
+
+                            {activeTab === "approval" && (
                               <>
-                                <Button 
-                                  size="sm" 
-                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                <Button
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                   onClick={() => approveProvider(provider.id)}
-                                  disabled={!!actionLoading[provider.id]}
+                                  disabled={isProviderActionDisabled(provider, "approve")}
                                 >
-                                  {actionLoading[provider.id] === 'approving' ? (
+                                  {actionLoading[provider.id] === "approving" ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : provider.isApproved === true ? (
+                                    "Approved"
                                   ) : (
-                                    'Approve'
+                                    "Approve"
                                   )}
                                 </Button>
-                                <Button 
-                                  size="sm" 
-                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                <Button
+                                  size="sm"
+                                  className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                   onClick={() => rejectProvider(provider.id)}
-                                  disabled={!!actionLoading[provider.id]}
+                                  disabled={isProviderActionDisabled(provider, "reject")}
                                 >
-                                  {actionLoading[provider.id] === 'rejecting' ? (
+                                  {actionLoading[provider.id] === "rejecting" ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : provider.isApproved === false ? (
+                                    "Rejected"
                                   ) : (
-                                    'Reject'
+                                    "Reject"
                                   )}
                                 </Button>
                               </>
                             )}
-                            {activeTab === 'existing' && (
+
+                            {activeTab === "existing" && (
                               <>
                                 {provider.isApproved && provider.isActive && (
-                                  <Button 
-                                    size="sm" 
+                                  <Button
+                                    size="sm"
                                     className="bg-red-600 hover:bg-red-700 text-white"
                                     onClick={() => suspendProvider(provider.id)}
-                                    disabled={!!actionLoading[provider.id]}
+                                    disabled={isProviderActionDisabled(provider, "suspend")}
                                   >
-                                    {actionLoading[provider.id] === 'suspending' ? (
+                                    {actionLoading[provider.id] === "suspending" ? (
                                       <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
-                                      'Suspend'
+                                      "Suspend"
                                     )}
                                   </Button>
                                 )}
                                 {provider.isApproved && !provider.isActive && (
-                                  <Button 
-                                    size="sm" 
+                                  <Button
+                                    size="sm"
                                     className="bg-green-600 hover:bg-green-700 text-white"
                                     onClick={() => reactivateProvider(provider.id)}
-                                    disabled={!!actionLoading[provider.id]}
+                                    disabled={isProviderActionDisabled(provider, "reactivate")}
                                   >
-                                    {actionLoading[provider.id] === 'reactivating' ? (
+                                    {actionLoading[provider.id] === "reactivating" ? (
                                       <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
-                                      'Reactivate'
+                                      "Reactivate"
                                     )}
                                   </Button>
                                 )}
@@ -814,20 +875,21 @@ const Providers = () => {
             {totalPages > 1 && (
               <div className="flex items-center justify-between mt-6 pt-4 border-t">
                 <div className="text-sm text-gray-600">
-                  Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, totalItems)} of {totalItems} providers
+                  Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, totalItems)} of{" "}
+                  {totalItems} providers
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                    onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
                     disabled={currentPage === 0 || loading}
                   >
                     Previous
                   </Button>
-                  
+
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i;
+                    const pageNum = Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i
                     return (
                       <Button
                         key={pageNum}
@@ -838,13 +900,13 @@ const Providers = () => {
                       >
                         {pageNum + 1}
                       </Button>
-                    );
+                    )
                   })}
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
                     disabled={currentPage >= totalPages - 1 || loading}
                   >
                     Next
@@ -869,15 +931,10 @@ const Providers = () => {
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">{selectedProvider.username}</h2>
                     <p className="text-lg text-gray-600 font-medium">{selectedProvider.email}</p>
-                    <Badge className={getStatusBadgeClass(selectedProvider)}>
-                      {getStatusText(selectedProvider)}
-                    </Badge>
+                    <Badge className={getStatusBadgeClass(selectedProvider)}>{getStatusText(selectedProvider)}</Badge>
                   </div>
                 </div>
-                <button
-                  onClick={handleCloseModal}
-                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-                >
+                <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">
                   ×
                 </button>
               </div>
@@ -912,6 +969,7 @@ const Providers = () => {
                     </div>
                   </div>
                 </div>
+
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Address</h3>
                   <div className="space-y-3">
@@ -924,43 +982,58 @@ const Providers = () => {
               </div>
 
               <div className="flex gap-3 mt-8 pt-6 border-t">
-                {activeTab === 'approval' && (
+                {activeTab === "approval" && (
                   <>
-                    <Button 
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                    <Button
+                      className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={() => approveProvider(selectedProvider.id)}
-                      disabled={!!actionLoading[selectedProvider.id]}
+                      disabled={isProviderActionDisabled(selectedProvider, "approve")}
                     >
-                      {actionLoading[selectedProvider.id] === 'approving' ? (
+                      {actionLoading[selectedProvider.id] === "approving" ? (
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : selectedProvider.isApproved === true ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Approved
+                        </>
                       ) : (
-                        <CheckCircle className="w-4 h-4 mr-2" />
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Approve
+                        </>
                       )}
-                      Approve
                     </Button>
-                    <Button 
-                      className="bg-red-600 hover:bg-red-700 text-white"
+                    <Button
+                      className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={() => rejectProvider(selectedProvider.id)}
-                      disabled={!!actionLoading[selectedProvider.id]}
+                      disabled={isProviderActionDisabled(selectedProvider, "reject")}
                     >
-                      {actionLoading[selectedProvider.id] === 'rejecting' ? (
+                      {actionLoading[selectedProvider.id] === "rejecting" ? (
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : selectedProvider.isApproved === false ? (
+                        <>
+                          <Ban className="w-4 h-4 mr-2" />
+                          Rejected
+                        </>
                       ) : (
-                        <Ban className="w-4 h-4 mr-2" />
+                        <>
+                          <Ban className="w-4 h-4 mr-2" />
+                          Reject
+                        </>
                       )}
-                      Reject
                     </Button>
                   </>
                 )}
-                {activeTab === 'existing' && (
+
+                {activeTab === "existing" && (
                   <>
                     {selectedProvider.isApproved && selectedProvider.isActive && (
-                      <Button 
+                      <Button
                         className="bg-red-600 hover:bg-red-700 text-white"
                         onClick={() => suspendProvider(selectedProvider.id)}
-                        disabled={!!actionLoading[selectedProvider.id]}
+                        disabled={isProviderActionDisabled(selectedProvider, "suspend")}
                       >
-                        {actionLoading[selectedProvider.id] === 'suspending' ? (
+                        {actionLoading[selectedProvider.id] === "suspending" ? (
                           <Loader2 className="w-4 h-4 animate-spin mr-2" />
                         ) : (
                           <Ban className="w-4 h-4 mr-2" />
@@ -969,12 +1042,12 @@ const Providers = () => {
                       </Button>
                     )}
                     {selectedProvider.isApproved && !selectedProvider.isActive && (
-                      <Button 
+                      <Button
                         className="bg-green-600 hover:bg-green-700 text-white"
                         onClick={() => reactivateProvider(selectedProvider.id)}
-                        disabled={!!actionLoading[selectedProvider.id]}
+                        disabled={isProviderActionDisabled(selectedProvider, "reactivate")}
                       >
-                        {actionLoading[selectedProvider.id] === 'reactivating' ? (
+                        {actionLoading[selectedProvider.id] === "reactivating" ? (
                           <Loader2 className="w-4 h-4 animate-spin mr-2" />
                         ) : (
                           <CheckCircle className="w-4 h-4 mr-2" />
@@ -984,6 +1057,7 @@ const Providers = () => {
                     )}
                   </>
                 )}
+
                 <Button variant="outline" onClick={handleCloseModal}>
                   Close
                 </Button>
@@ -993,7 +1067,7 @@ const Providers = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Providers;
+export default Providers

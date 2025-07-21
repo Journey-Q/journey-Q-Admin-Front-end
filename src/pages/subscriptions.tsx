@@ -1,6 +1,5 @@
 "use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,7 +25,12 @@ import {
   ChevronDown,
   ChevronUp,
   Save,
+  Percent,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
 } from "lucide-react"
+import { toast } from "sonner"
 
 const Subscriptions = () => {
   const [activeTab, setActiveTab] = useState("overview")
@@ -38,74 +42,42 @@ const Subscriptions = () => {
   const [showUserModal, setShowUserModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [expandedPlan, setExpandedPlan] = useState(null)
+  const [subscriptionPlans, setSubscriptionPlans] = useState([])
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [loadingPlans, setLoadingPlans] = useState(true)
+  const [error, setError] = useState("")
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   // Form state for plan creation/editing
   const [planForm, setPlanForm] = useState({
     name: "",
-    type: "premium",
+    type: "",
     price: "",
     interval: "monthly",
     description: "",
     features: [""],
     isActive: true,
+    hasDiscount: false,
+    discountPercentage: "",
   })
 
-  // Mock subscription plans data
-  const [subscriptionPlans, setSubscriptionPlans] = useState([
-    {
-      id: 1,
-      name: "Premium Monthly",
-      type: "premium",
-      price: 2500,
-      currency: "Rs",
-      interval: "monthly",
-      features: [
-        "AI-powered trip planning",
-        "Public trip invites",
-        "Ad Free",
-      ],
-      isActive: true,
-      subscribers: 1247,
-      revenue: 3117500,
-      createdDate: "2024-01-15",
-      description: "Perfect for frequent travelers who want premium features",
-    },
-    {
-      id: 2,
-      name: "Premium Yearly",
-      type: "premium",
-      price: 25000,
-      currency: "Rs",
-      interval: "yearly",
-      features: [
-        "AI-powered trip planning",
-        "Public trip invites",
-        "Ad Free",
-      ],
-      isActive: true,
-      subscribers: 892,
-      revenue: 22300000,
-      createdDate: "2024-01-15",
-      description: "Best value for dedicated travelers with annual savings",
-    },
-    {
-      id: 3,
-      name: "Basic Plan",
-      type: "basic",
-      price: 0,
-      currency: "Rs",
-      interval: "lifetime",
-      features: ["Community access", "Limited trip saves", "With Ads"],
-      isActive: true,
-      subscribers: 5420,
-      revenue: 0,
-      createdDate: "2024-01-01",
-      description: "Free plan for casual travelers",
-    },
-  ])
+  // API Base URL
+  // const API_BASE_URL = 'http://localhost:8080/service'
+    const API_BASE_URL = 'https://serviceprovidersservice-production.up.railway.app/service'
 
-  // Mock users data
-  const [users, setUsers] = useState([
+
+  // Get the auth token from localStorage
+  const getAuthToken = () => {
+    return localStorage.getItem('admin_token') || 
+           localStorage.getItem('adminToken') || 
+           localStorage.getItem('authToken') || 
+           localStorage.getItem('accessToken') ||
+           localStorage.getItem('token')
+  }
+
+  // Mock users data (since no user-related endpoints provided)
+  const mockUsers = [
     {
       id: 1,
       name: "Sarah Johnson",
@@ -171,15 +143,118 @@ const Subscriptions = () => {
       country: "Sri Lanka",
       lastActive: "2024-07-08",
     },
-  ])
+  ]
+
+  // Fetch subscription plans on mount
+  useEffect(() => {
+    const token = getAuthToken()
+    setIsAuthenticated(!!token)
+    fetchPlans()
+    setUsers(mockUsers) // Using mock users since no user endpoints provided
+  }, [])
+
+  const fetchPlans = async () => {
+    try {
+      setLoadingPlans(true)
+      const token = getAuthToken()
+      
+      let headers = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch(`${API_BASE_URL}/subscription-plans/active`, {
+        method: 'GET',
+        headers: headers,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSubscriptionPlans(data)
+        setError("")
+        setIsAuthenticated(true)
+      } else if (response.status === 401) {
+        setError("Not authenticated. Please login to manage subscription plans.")
+        setIsAuthenticated(false)
+        setMockPlans()
+      } else {
+        const errorData = await response.json()
+        setError(errorData.message || "Failed to fetch subscription plans")
+        setMockPlans()
+      }
+    } catch (err) {
+      console.error('Error fetching plans:', err)
+      setError("Network error. Showing sample data.")
+      setMockPlans()
+    } finally {
+      setLoadingPlans(false)
+    }
+  }
+
+  // Fallback mock plans data
+  const setMockPlans = () => {
+    setSubscriptionPlans([
+      {
+        id: 1,
+        name: "Premium Monthly",
+        type: "premium",
+        price: "2500",
+        currency: "Rs",
+        interval: "monthly",
+        features: ["AI-powered trip planning", "Public trip invites", "Ad Free"],
+        isActive: true,
+        subscribers: 1247,
+        revenue: 3117500,
+        createdDate: "2024-01-15",
+        description: "Perfect for frequent travelers who want premium features",
+        hasDiscount: true,
+        discountPercentage: "10",
+      },
+      {
+        id: 2,
+        name: "Premium Yearly",
+        type: "premium",
+        price: "25000",
+        currency: "Rs",
+        interval: "yearly",
+        features: ["AI-powered trip planning", "Public trip invites", "Ad Free"],
+        isActive: true,
+        subscribers: 892,
+        revenue: 22300000,
+        createdDate: "2024-01-15",
+        description: "Best value for dedicated travelers with annual savings",
+        hasDiscount: true,
+        discountPercentage: "20",
+      },
+      {
+        id: 3,
+        name: "Basic Plan",
+        type: "basic",
+        price: "0",
+        currency: "Rs",
+        interval: "lifetime",
+        features: ["Community access", "Limited trip saves", "With Ads"],
+        isActive: true,
+        subscribers: 5420,
+        revenue: 0,
+        createdDate: "2024-01-01",
+        description: "Free plan for casual travelers",
+        hasDiscount: false,
+        discountPercentage: "0",
+      },
+    ])
+  }
 
   // Statistics
   const stats = {
     totalSubscribers: users.filter((u) => u.status === "active").length,
-    totalRevenue: subscriptionPlans.reduce((sum, plan) => sum + plan.revenue, 0),
+    totalRevenue: subscriptionPlans.reduce((sum, plan) => sum + (plan.revenue || 0), 0),
     monthlyRecurring: subscriptionPlans
       .filter((p) => p.interval === "monthly")
-      .reduce((sum, plan) => sum + plan.subscribers * plan.price, 0),
+      .reduce((sum, plan) => sum + (plan.subscribers || 0) * parseFloat(plan.price || 0), 0),
     premiumUsers: users.filter((u) => u.planId !== 3 && u.status === "active").length,
     activeSubscriptions: users.filter((u) => u.status === "active").length,
     cancelledSubscriptions: users.filter((u) => u.status === "cancelled").length,
@@ -214,35 +289,50 @@ const Subscriptions = () => {
   }
 
   const getPlanBadgeClass = (type) => {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case "premium":
         return "bg-blue-100 text-blue-800"
       case "basic":
         return "bg-gray-100 text-gray-800"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-purple-100 text-purple-800"
     }
+  }
+
+  const calculateDiscountedPrice = (price, hasDiscount, discountPercentage) => {
+    if (!hasDiscount || !discountPercentage) return parseFloat(price)
+    return parseFloat(price) - (parseFloat(price) * parseFloat(discountPercentage)) / 100
   }
 
   const resetPlanForm = () => {
     setPlanForm({
       name: "",
-      type: "premium",
+      type: "",
       price: "",
       interval: "monthly",
       description: "",
       features: [""],
       isActive: true,
+      hasDiscount: false,
+      discountPercentage: "",
     })
   }
 
   const handleCreatePlan = () => {
+    if (!isAuthenticated) {
+      toast.error("Authentication required. Please login to create subscription plans.")
+      return
+    }
     resetPlanForm()
     setEditingPlan(null)
     setShowPlanModal(true)
   }
 
   const handleEditPlan = (plan) => {
+    if (!isAuthenticated) {
+      toast.error("Authentication required. Please login to edit subscription plans.")
+      return
+    }
     setPlanForm({
       name: plan.name,
       type: plan.type,
@@ -251,64 +341,135 @@ const Subscriptions = () => {
       description: plan.description,
       features: [...plan.features],
       isActive: plan.isActive,
+      hasDiscount: plan.hasDiscount || false,
+      discountPercentage: plan.discountPercentage ? plan.discountPercentage.toString() : "",
     })
     setEditingPlan(plan)
     setShowPlanModal(true)
   }
 
-  const handleDeletePlan = (planId) => {
+  const handleDeletePlan = async (planId) => {
+    const token = getAuthToken()
+    if (!token) {
+      toast.error("Authentication required. Please login to delete subscription plans.")
+      return
+    }
+
     if (window.confirm("Are you sure you want to delete this plan? This action cannot be undone.")) {
-      setSubscriptionPlans((prev) => prev.filter((plan) => plan.id !== planId))
+      try {
+        setLoading(true)
+        const response = await fetch(`${API_BASE_URL}/subscription-plans/${planId}`, {
+          method: "DELETE",
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        if (response.ok) {
+          toast.success("Subscription plan deleted successfully!")
+          setSubscriptionPlans((prev) => prev.filter((plan) => plan.id !== planId))
+        } else {
+          const errorData = await response.json()
+          toast.error(errorData.message || "Failed to delete plan")
+        }
+      } catch (err) {
+        toast.error("Network error. Please check your connection.")
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
-  const handleSavePlan = () => {
+  const handleSavePlan = async () => {
+    const token = getAuthToken()
+    if (!token) {
+      toast.error("Authentication required. Please login to manage subscription plans.")
+      return
+    }
+
     // Validation
     if (!planForm.name.trim()) {
-      alert("Plan name is required")
+      toast.error("Plan name is required")
+      return
+    }
+    if (!planForm.type.trim()) {
+      toast.error("Plan type is required")
       return
     }
     if (!planForm.description.trim()) {
-      alert("Plan description is required")
+      toast.error("Plan description is required")
       return
     }
     if (planForm.price === "" || (planForm.price !== "0" && Number.parseFloat(planForm.price) <= 0)) {
-      alert("Please enter a valid price")
+      toast.error("Please enter a valid price")
       return
     }
     if (planForm.features.some((feature) => !feature.trim())) {
-      alert("All features must have content")
+      toast.error("All features must have content")
+      return
+    }
+    if (
+      planForm.hasDiscount &&
+      (!planForm.discountPercentage ||
+        Number.parseFloat(planForm.discountPercentage) <= 0 ||
+        Number.parseFloat(planForm.discountPercentage) > 100)
+    ) {
+      toast.error("Please enter a valid discount percentage between 1-100")
       return
     }
 
     const planData = {
       name: planForm.name.trim(),
-      type: planForm.type,
-      price: Number.parseFloat(planForm.price),
-      currency: "Rs",
+      type: planForm.type.trim(),
+      price: planForm.price.toString(),
       interval: planForm.interval,
       description: planForm.description.trim(),
       features: planForm.features.filter((feature) => feature.trim()),
       isActive: planForm.isActive,
-      subscribers: editingPlan ? editingPlan.subscribers : 0,
-      revenue: editingPlan ? editingPlan.revenue : 0,
-      createdDate: editingPlan ? editingPlan.createdDate : new Date().toISOString().split("T")[0],
+      hasDiscount: planForm.hasDiscount,
+      discountPercentage: planForm.hasDiscount ? planForm.discountPercentage.toString() : "0",
     }
 
-    if (editingPlan) {
-      // Update existing plan
-      setSubscriptionPlans((prev) =>
-        prev.map((plan) => (plan.id === editingPlan.id ? { ...planData, id: editingPlan.id } : plan)),
-      )
-    } else {
-      // Create new plan
-      const newId = Math.max(...subscriptionPlans.map((p) => p.id)) + 1
-      setSubscriptionPlans((prev) => [...prev, { ...planData, id: newId }])
-    }
+    try {
+      setLoading(true)
+      const endpoint = editingPlan
+        ? `${API_BASE_URL}/subscription-plans/${editingPlan.id}`
+        : `${API_BASE_URL}/subscription-plans/create`
+      const method = editingPlan ? "PUT" : "POST"
 
-    setShowPlanModal(false)
-    resetPlanForm()
-    setEditingPlan(null)
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(planData),
+      })
+
+      if (response.ok) {
+        const updatedPlan = await response.json()
+        toast.success(editingPlan ? "Plan updated successfully!" : "Plan created successfully!")
+        
+        if (editingPlan) {
+          setSubscriptionPlans((prev) =>
+            prev.map((plan) => (plan.id === editingPlan.id ? updatedPlan : plan))
+          )
+        } else {
+          setSubscriptionPlans((prev) => [...prev, updatedPlan])
+        }
+
+        setShowPlanModal(false)
+        resetPlanForm()
+        setEditingPlan(null)
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.message || `Failed to ${editingPlan ? "update" : "create"} plan`)
+      }
+    } catch (err) {
+      toast.error("Network error. Please check your connection.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleAddFeature = () => {
@@ -342,25 +503,40 @@ const Subscriptions = () => {
   return (
     <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
       {/* Header */}
-      {/* <Card className="p-6 bg-white shadow-lg border-0">
+      <Card className="p-6 bg-white shadow-lg border-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-[#0088cc]/10 rounded-xl flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-[#0088cc]" />
+              <Settings className="w-6 h-6 text-[#0088cc]" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Subscription Management</h1>
-              <p className="text-gray-600">Manage subscription plans, users, and revenue analytics</p>
+              <p className="text-gray-600">Manage subscription plans and subscribers</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <Button onClick={handleCreatePlan} className="bg-[#0088cc] hover:bg-blue-700 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Plan
-            </Button>
+            {isAuthenticated && (
+              <Badge className="bg-green-100 text-green-800">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Authenticated
+              </Badge>
+            )}
+            <Badge className="bg-[#0088cc]/10 text-[#0088cc]">
+              {loadingPlans ? "Loading..." : `${subscriptionPlans.length} Total Plans`}
+            </Badge>
           </div>
         </div>
-      </Card> */}
+      </Card>
+
+      {/* Error Messages */}
+      {error && (
+        <Card className="p-4 bg-red-50 border-red-200">
+          <div className="flex items-center gap-2 text-red-600">
+            <AlertCircle className="w-5 h-5" />
+            <span>{error}</span>
+          </div>
+        </Card>
+      )}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -375,7 +551,6 @@ const Subscriptions = () => {
             </div>
           </div>
         </Card>
-
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
@@ -387,7 +562,6 @@ const Subscriptions = () => {
             </div>
           </div>
         </Card>
-
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
@@ -399,7 +573,6 @@ const Subscriptions = () => {
             </div>
           </div>
         </Card>
-
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
@@ -457,39 +630,7 @@ const Subscriptions = () => {
       {/* Overview Tab */}
       {activeTab === "overview" && (
         <div className="space-y-6">
-          {/* Revenue Analytics */}
-          <Card className="p-6 bg-white shadow-lg border-0">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Analytics</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-500/10 rounded-xl mx-auto mb-3 flex items-center justify-center">
-                  <DollarSign className="w-8 h-8 text-green-500" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900">Rs {stats.avgRevenuePerUser.toFixed(2)}</p>
-                <p className="text-sm text-gray-600">Average Revenue Per User</p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-500/10 rounded-xl mx-auto mb-3 flex items-center justify-center">
-                  <TrendingUp className="w-8 h-8 text-blue-500" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {(
-                    (stats.activeSubscriptions / (stats.activeSubscriptions + stats.cancelledSubscriptions)) *
-                    100
-                  ).toFixed(1)}
-                  %
-                </p>
-                <p className="text-sm text-gray-600">Retention Rate</p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-yellow-500/10 rounded-xl mx-auto mb-3 flex items-center justify-center">
-                  <Target className="w-8 h-8 text-yellow-500" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{stats.pastDueSubscriptions}</p>
-                <p className="text-sm text-gray-600">Past Due Subscriptions</p>
-              </div>
-            </div>
-          </Card>
+          
 
           {/* Plan Performance */}
           <Card className="p-6 bg-white shadow-lg border-0">
@@ -502,14 +643,40 @@ const Subscriptions = () => {
                       <Star className="w-5 h-5 text-[#0088cc]" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900">{plan.name}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900">{plan.name}</h4>
+                        {plan.hasDiscount && (
+                          <Badge className="bg-orange-100 text-orange-800 text-xs">
+                            <Percent className="w-3 h-3 mr-1" />
+                            {plan.discountPercentage}% OFF
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600">
-                        Rs {plan.price.toLocaleString()}/{plan.interval} • {plan.subscribers} subscribers
+                        {plan.hasDiscount ? (
+                          <>
+                            <span className="line-through text-gray-400">Rs {parseFloat(plan.price).toLocaleString()}</span>
+                            <span className="ml-2 font-semibold text-green-600">
+                              Rs{" "}
+                              {calculateDiscountedPrice(
+                                plan.price,
+                                plan.hasDiscount,
+                                plan.discountPercentage,
+                              ).toLocaleString()}
+                            </span>
+                            /{plan.interval}
+                          </>
+                        ) : (
+                          <>
+                            Rs {parseFloat(plan.price).toLocaleString()}/{plan.interval}
+                          </>
+                        )}{" "}
+                        • {plan.subscribers || 0} subscribers
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-gray-900">Rs {plan.revenue.toLocaleString()}</p>
+                    <p className="font-semibold text-gray-900">Rs {(plan.revenue || 0).toLocaleString()}</p>
                     <p className="text-sm text-gray-600">Total Revenue</p>
                   </div>
                 </div>
@@ -527,102 +694,135 @@ const Subscriptions = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Subscription Plans</h3>
                 <p className="text-gray-600">Manage your subscription plans and pricing</p>
+                {!isAuthenticated && (
+                  <p className="text-sm text-amber-600">Login required to create or modify plans</p>
+                )}
               </div>
-              <Button onClick={handleCreatePlan} className="bg-[#0088cc] hover:bg-blue-700 text-white">
+              <Button 
+                onClick={handleCreatePlan} 
+                className="bg-[#0088cc] hover:bg-blue-700 text-white"
+                disabled={!isAuthenticated}
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Add New Plan
+                {isAuthenticated ? "Add New Plan" : "Login Required"}
               </Button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subscriptionPlans.map((plan) => (
-                <Card
-                  key={plan.id}
-                  className="p-6 bg-white shadow-md border border-gray-200 hover:shadow-lg transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#0088cc]/10 rounded-lg flex items-center justify-center">
-                        <Star className="w-5 h-5 text-[#0088cc]" />
+            {loadingPlans ? (
+              <div className="text-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#0088cc]" />
+                <p className="text-gray-500">Loading subscription plans...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {subscriptionPlans.map((plan) => (
+                  <Card
+                    key={plan.id}
+                    className="p-6 bg-white shadow-md border border-gray-200 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[#0088cc]/10 rounded-lg flex items-center justify-center">
+                          <Star className="w-5 h-5 text-[#0088cc]" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{plan.name}</h4>
+                          <Badge className={getPlanBadgeClass(plan.type)}>{plan.type}</Badge>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleEditPlan(plan)}
+                          disabled={!isAuthenticated}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeletePlan(plan.id)}
+                          className="text-red-600 hover:text-red-700 bg-transparent"
+                          disabled={!isAuthenticated}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        {plan.hasDiscount ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg line-through text-gray-400">Rs {parseFloat(plan.price).toLocaleString()}</span>
+                            <span className="text-3xl font-bold text-green-600">
+                              Rs{" "}
+                              {calculateDiscountedPrice(
+                                plan.price,
+                                plan.hasDiscount,
+                                plan.discountPercentage,
+                              ).toLocaleString()}
+                            </span>
+                            <Badge className="bg-orange-100 text-orange-800 text-xs">
+                              <Percent className="w-3 h-3 mr-1" />
+                              {plan.discountPercentage}% OFF
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-3xl font-bold text-gray-900">
+                            {parseFloat(plan.price) === 0 ? "Free" : `Rs ${parseFloat(plan.price).toLocaleString()}`}
+                          </span>
+                        )}
+                        {parseFloat(plan.price) > 0 && <span className="text-gray-600">/{plan.interval}</span>}
+                      </div>
+                      <p className="text-sm text-gray-600">{plan.description}</p>
+                    </div>
+                    <div className="mb-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpandedPlan(expandedPlan === plan.id ? null : plan.id)}
+                        className="w-full justify-between"
+                      >
+                        <span>Features ({plan.features.length})</span>
+                        {expandedPlan === plan.id ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </Button>
+                      {expandedPlan === plan.id && (
+                        <div className="mt-2 space-y-1">
+                          {plan.features.map((feature, index) => (
+                            <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
+                              <Check className="w-3 h-3 text-green-500" />
+                              <span>{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Subscribers</p>
+                        <p className="font-semibold text-gray-900">{plan.subscribers || 0}</p>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">{plan.name}</h4>
-                        <Badge className={getPlanBadgeClass(plan.type)}>{plan.type}</Badge>
+                        <p className="text-gray-600">Revenue</p>
+                        <p className="font-semibold text-gray-900">Rs {(plan.revenue || 0).toLocaleString()}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditPlan(plan)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeletePlan(plan.id)}
-                        className="text-red-600 hover:text-red-700 bg-transparent"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="flex items-baseline gap-1 mb-2">
-                      <span className="text-3xl font-bold text-gray-900">
-                        {plan.price === 0 ? "Free" : `Rs ${plan.price.toLocaleString()}`}
-                      </span>
-                      {plan.price > 0 && <span className="text-gray-600">/{plan.interval}</span>}
-                    </div>
-                    <p className="text-sm text-gray-600">{plan.description}</p>
-                  </div>
-
-                  <div className="mb-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setExpandedPlan(expandedPlan === plan.id ? null : plan.id)}
-                      className="w-full justify-between"
-                    >
-                      <span>Features ({plan.features.length})</span>
-                      {expandedPlan === plan.id ? (
-                        <ChevronUp className="w-4 h-4" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4" />
-                      )}
-                    </Button>
-                    {expandedPlan === plan.id && (
-                      <div className="mt-2 space-y-1">
-                        {plan.features.map((feature, index) => (
-                          <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                            <Check className="w-3 h-3 text-green-500" />
-                            <span>{feature}</span>
-                          </div>
-                        ))}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Status</span>
+                        <Badge className={plan.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                          {plan.isActive ? "Active" : "Inactive"}
+                        </Badge>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600">Subscribers</p>
-                      <p className="font-semibold text-gray-900">{plan.subscribers}</p>
                     </div>
-                    <div>
-                      <p className="text-gray-600">Revenue</p>
-                      <p className="font-semibold text-gray-900">Rs {plan.revenue.toLocaleString()}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Status</span>
-                      <Badge className={plan.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                        {plan.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       )}
@@ -722,7 +922,11 @@ const Subscriptions = () => {
                             <Button variant="outline" size="sm" onClick={() => handleViewUser(user)}>
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              disabled={!isAuthenticated}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
                           </div>
@@ -758,7 +962,6 @@ const Subscriptions = () => {
                 </Button>
               </div>
             </div>
-
             <div className="p-6 space-y-6">
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -770,21 +973,21 @@ const Subscriptions = () => {
                     onChange={(e) => setPlanForm((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g., Premium Monthly"
                     className="focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
+                    disabled={!isAuthenticated}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Plan Type *</label>
-                  <select
+                  <Input
+                    type="text"
                     value={planForm.type}
                     onChange={(e) => setPlanForm((prev) => ({ ...prev, type: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
-                  >
-                    <option value="basic">Basic</option>
-                    <option value="premium">Premium</option>
-                  </select>
+                    placeholder="e.g., premium, basic, enterprise"
+                    className="focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
+                    disabled={!isAuthenticated}
+                  />
                 </div>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Price (Rs) *</label>
@@ -796,6 +999,7 @@ const Subscriptions = () => {
                     min="0"
                     step="0.01"
                     className="focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
+                    disabled={!isAuthenticated}
                   />
                 </div>
                 <div>
@@ -804,12 +1008,74 @@ const Subscriptions = () => {
                     value={planForm.interval}
                     onChange={(e) => setPlanForm((prev) => ({ ...prev, interval: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
+                    disabled={!isAuthenticated}
                   >
                     <option value="monthly">Monthly</option>
                     <option value="yearly">Yearly</option>
                     <option value="lifetime">Lifetime</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Discount Section */}
+              <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="hasDiscount"
+                    checked={planForm.hasDiscount}
+                    onChange={(e) =>
+                      setPlanForm((prev) => ({
+                        ...prev,
+                        hasDiscount: e.target.checked,
+                        discountPercentage: e.target.checked ? prev.discountPercentage : "",
+                      }))
+                    }
+                    className="w-4 h-4 text-[#0088cc] border-gray-300 rounded focus:ring-[#0088cc]"
+                    disabled={!isAuthenticated}
+                  />
+                  <label htmlFor="hasDiscount" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Percent className="w-4 h-4" />
+                    Enable Discount for this plan
+                  </label>
+                </div>
+                {planForm.hasDiscount && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Discount Percentage *</label>
+                    <Input
+                      type="number"
+                      value={planForm.discountPercentage}
+                      onChange={(e) => setPlanForm((prev) => ({ ...prev, discountPercentage: e.target.value }))}
+                      placeholder="10"
+                      min="1"
+                      max="100"
+                      className="focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
+                      disabled={!isAuthenticated}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Enter a value between 1-100</p>
+                    {planForm.price && planForm.discountPercentage && (
+                      <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                        <p className="text-sm text-green-800">
+                          <span className="font-medium">Discounted Price: </span>
+                          <span className="line-through text-gray-500">
+                            Rs {Number.parseFloat(planForm.price).toLocaleString()}
+                          </span>
+                          <span className="ml-2 font-bold">
+                            Rs{" "}
+                            {calculateDiscountedPrice(
+                              Number.parseFloat(planForm.price),
+                              true,
+                              Number.parseFloat(planForm.discountPercentage),
+                            ).toLocaleString()}
+                          </span>
+                          <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                            {planForm.discountPercentage}% OFF
+                          </span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -820,6 +1086,7 @@ const Subscriptions = () => {
                   rows={3}
                   placeholder="Describe what this plan offers..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0088cc] focus:border-transparent resize-none"
+                  disabled={!isAuthenticated}
                 />
               </div>
 
@@ -833,6 +1100,7 @@ const Subscriptions = () => {
                     size="sm"
                     onClick={handleAddFeature}
                     className="text-[#0088cc] border-[#0088cc] hover:bg-[#0088cc]/5 bg-transparent"
+                    disabled={!isAuthenticated}
                   >
                     <Plus className="w-4 h-4 mr-1" />
                     Add Feature
@@ -847,6 +1115,7 @@ const Subscriptions = () => {
                         onChange={(e) => handleFeatureChange(index, e.target.value)}
                         placeholder="Enter feature description"
                         className="flex-1 focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
+                        disabled={!isAuthenticated}
                       />
                       {planForm.features.length > 1 && (
                         <Button
@@ -855,6 +1124,7 @@ const Subscriptions = () => {
                           size="sm"
                           onClick={() => handleRemoveFeature(index)}
                           className="text-red-600 border-red-300 hover:bg-red-50"
+                          disabled={!isAuthenticated}
                         >
                           <X className="w-4 h-4" />
                         </Button>
@@ -872,6 +1142,7 @@ const Subscriptions = () => {
                   checked={planForm.isActive}
                   onChange={(e) => setPlanForm((prev) => ({ ...prev, isActive: e.target.checked }))}
                   className="w-4 h-4 text-[#0088cc] border-gray-300 rounded focus:ring-[#0088cc]"
+                  disabled={!isAuthenticated}
                 />
                 <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
                   Plan is active and available for subscription
@@ -891,9 +1162,22 @@ const Subscriptions = () => {
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleSavePlan} className="flex-1 bg-[#0088cc] hover:bg-blue-700 text-white">
-                  <Save className="w-4 h-4 mr-2" />
-                  {editingPlan ? "Update Plan" : "Create Plan"}
+                <Button 
+                  onClick={handleSavePlan} 
+                  className="flex-1 bg-[#0088cc] hover:bg-blue-700 text-white"
+                  disabled={loading || !isAuthenticated}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {editingPlan ? "Updating..." : "Creating..."}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      {editingPlan ? "Update Plan" : "Create Plan"}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -921,7 +1205,6 @@ const Subscriptions = () => {
                 </Button>
               </div>
             </div>
-
             <div className="p-6 space-y-6">
               {/* User Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -952,7 +1235,6 @@ const Subscriptions = () => {
                     </div>
                   </div>
                 </div>
-
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Profile Information</h3>
                   <div className="space-y-3">
@@ -970,7 +1252,10 @@ const Subscriptions = () => {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-6 border-t border-gray-200">
-                <Button className="bg-[#0088cc] hover:bg-blue-700 text-white">
+                <Button 
+                  className="bg-[#0088cc] hover:bg-blue-700 text-white"
+                  disabled={!isAuthenticated}
+                >
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Subscription
                 </Button>

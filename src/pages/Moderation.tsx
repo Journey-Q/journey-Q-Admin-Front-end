@@ -1,16 +1,12 @@
-import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+"use client"
+
+import { useState } from "react"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -18,111 +14,100 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { 
-  Search, 
-  Calendar, 
-  MapPin, 
-  DollarSign, 
-  Eye, 
-  Shield, 
-  Clock, 
-  AlertTriangle, 
-  CheckCircle, 
+} from "@/components/ui/dialog"
+import {
+  Search,
+  Calendar,
+  MapPin,
+  DollarSign,
+  Eye,
+  Shield,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
   XCircle,
   Mail,
   Flag,
   Heart,
-  Image,
-  UserCheck,
-  History,
   Camera,
   Share2,
-  UserX,
   MessageCircle,
   Trash2,
   AlertCircle,
-  Star,
-  Building,
-  Utensils,
   Lightbulb,
   User,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Edit,
-  Ban,
-  Archive,
-  Filter
-} from 'lucide-react';
+} from "lucide-react"
 
 const AdminModerationDashboard = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('pending');
-  const [filterPriority, setFilterPriority] = useState('all');
-  const [selectedItems, setSelectedItems] = useState(new Set());
-  const [viewingPost, setViewingPost] = useState(null);
-  const [showModerationDialog, setShowModerationDialog] = useState(false);
-  const [moderationAction, setModerationAction] = useState('');
-  const [actionReason, setActionReason] = useState('');
-  const [warningMessage, setWarningMessage] = useState('');
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterType, setFilterType] = useState("all")
+  const [filterStatus, setFilterStatus] = useState("pending")
+  const [filterPriority, setFilterPriority] = useState("all")
+  const [selectedItems, setSelectedItems] = useState(new Set())
+  const [viewingPost, setViewingPost] = useState(null)
+  const [showModerationDialog, setShowModerationDialog] = useState(false)
+  const [moderationAction, setModerationAction] = useState("")
+  const [actionReason, setActionReason] = useState("")
+  const [warningMessage, setWarningMessage] = useState("")
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
-  // Mock reported posts data
+  // Mock reported posts data with Sri Lankan content
   const [reportedPosts, setReportedPosts] = useState([
     {
       id: 1,
-      type: 'Journey Post',
-      author: 'Alex Rodriguez',
-      authorEmail: 'alex.r@email.com',
-      authorId: 'user_123',
-      title: 'Discovering Modern Tokyo',
-      description: 'An amazing 5-day journey through Tokyo visiting Shibuya, Tokyo Tower, and traditional temples. Experience the perfect blend of modern and traditional Japan.',
-      fullDescription: 'An amazing 5-day journey through Tokyo visiting Shibuya, Tokyo Tower, and traditional temples. Experience the perfect blend of modern and traditional Japan. This comprehensive guide includes detailed itinerary, budget breakdown, and insider tips for fellow travelers.',
-      location: 'Tokyo, Japan',
-      duration: '5 days',
-      budget: '$2,500',
+      type: "Journey Post",
+      author: "Kasun Perera",
+      authorEmail: "kasun.p@email.com",
+      authorId: "user_123",
+      title: "Ancient Wonders of Sigiriya",
+      description:
+        "An incredible 4-day journey exploring the ancient rock fortress of Sigiriya, Dambulla Cave Temple, and the cultural triangle of Sri Lanka.",
+      fullDescription:
+        "An incredible 4-day journey exploring the ancient rock fortress of Sigiriya, Dambulla Cave Temple, and the cultural triangle of Sri Lanka. This comprehensive guide includes climbing tips, historical insights, and the best photography spots in the ancient kingdom.",
+      location: "Sigiriya, Sri Lanka",
+      duration: "4 days",
+      budget: "LKR 85,000",
       images: [
-        'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        'https://images.unsplash.com/photo-1542051841857-5f90071e7989?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+        "https://images.unsplash.com/photo-1566552881560-0be862a7c445?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        "https://images.unsplash.com/photo-1544735716-392fe2489ffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
       ],
-      hashtags: ['#tokyo', '#japan', '#travel', '#culture', '#adventure'],
+      hashtags: ["#sigiriya", "#srilanka", "#ancientcity", "#culture", "#heritage"],
       places: [
         {
-          name: 'Shibuya Crossing',
+          name: "Sigiriya Rock Fortress",
           day: 1,
-          activities: ['People watching', 'Shopping', 'Photography'],
-          budget: '$150'
+          activities: ["Rock climbing", "Frescoes viewing", "Lion Gate exploration"],
+          budget: "LKR 25,000",
         },
         {
-          name: 'Tokyo Tower',
+          name: "Dambulla Cave Temple",
           day: 2,
-          activities: ['Observation deck', 'City views', 'Sunset viewing'],
-          budget: '$200'
+          activities: ["Cave exploration", "Buddha statue viewing", "Temple prayers"],
+          budget: "LKR 20,000",
         },
         {
-          name: 'Senso-ji Temple',
+          name: "Polonnaruwa Ancient City",
           day: 3,
-          activities: ['Temple visit', 'Cultural experience', 'Traditional food'],
-          budget: '$180'
-        }
+          activities: ["Archaeological site tour", "Cycling", "Historical photography"],
+          budget: "LKR 22,000",
+        },
       ],
       tips: [
-        'Learn basic Japanese phrases',
-        'Carry cash - many places don\'t accept cards',
-        'Download Google Translate',
-        'Respect local customs'
+        "Start climbing Sigiriya early morning to avoid heat",
+        "Carry water and wear comfortable shoes",
+        "Respect religious sites and dress modestly",
+        "Hire a local guide for historical context",
       ],
-      reportReason: 'Inappropriate Content',
-      reportDetails: 'Contains potentially misleading budget information and promotional links',
-      reportedBy: 'TravelModerator',
-      reportDate: '2024-03-15',
-      postDate: '2024-03-14',
-      status: 'Pending',
-      priority: 'Medium',
+      reportReason: "Inappropriate Content",
+      reportDetails: "Contains potentially misleading budget information and promotional links for tour operators",
+      reportedBy: "TravelModerator",
+      reportDate: "2024-03-15",
+      postDate: "2024-03-14",
+      status: "Pending",
+      priority: "Medium",
       likes: 245,
       comments: 18,
       shares: 12,
@@ -132,68 +117,70 @@ const AdminModerationDashboard = () => {
         followers: 2340,
         following: 456,
         totalReports: 1,
-        accountAge: '2 years',
-        lastActive: '2 hours ago',
+        accountAge: "2 years",
+        lastActive: "2 hours ago",
         warnings: 0,
-        verifiedTraveler: true
+        verifiedTraveler: true,
       },
       reportInfo: {
         totalReports: 2,
-        reporters: ['TravelModerator', 'User456'],
-        reasons: ['Inappropriate Content', 'Misleading Information']
-      }
+        reporters: ["TravelModerator", "User456"],
+        reasons: ["Inappropriate Content", "Misleading Information"],
+      },
     },
     {
       id: 2,
-      type: 'Journey Post',
-      author: 'Sophie Chen',
-      authorEmail: 'sophie.c@email.com',
-      authorId: 'user_456',
-      title: 'Gaudi\'s Architectural Wonders in Barcelona',
-      description: 'Explore the magnificent works of Antoni Gaudi in Barcelona. Visit Sagrada Familia, Park Güell, and Casa Batlló. Use my discount code TRAVEL20 for bookings!',
-      fullDescription: 'Explore the magnificent works of Antoni Gaudi in Barcelona. Visit Sagrada Familia, Park Güell, and Casa Batlló. This 4-day architectural journey will take you through the most stunning examples of modernist architecture. Use my discount code TRAVEL20 for 20% off bookings at partner hotels!',
-      location: 'Barcelona, Spain',
-      duration: '4 days',
-      budget: '€1,800',
+      type: "Journey Post",
+      author: "Nimali Fernando",
+      authorEmail: "nimali.f@email.com",
+      authorId: "user_456",
+      title: "Tea Country Adventures in Nuwara Eliya",
+      description:
+        "Explore the misty hills of Nuwara Eliya, visit tea plantations, and experience the cool climate of Sri Lanka's hill country. Use my discount code TEA20 for bookings!",
+      fullDescription:
+        "Explore the misty hills of Nuwara Eliya, visit tea plantations, and experience the cool climate of Sri Lanka's hill country. This 5-day highland adventure includes tea factory tours, scenic train rides, and strawberry picking. Use my discount code TEA20 for 20% off bookings at partner hotels!",
+      location: "Nuwara Eliya, Sri Lanka",
+      duration: "5 days",
+      budget: "LKR 95,000",
       images: [
-        'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        'https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+        "https://images.unsplash.com/photo-1605640840605-14ac1855827b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        "https://images.unsplash.com/photo-1566552881560-0be862a7c445?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
       ],
-      hashtags: ['#barcelona', '#gaudi', '#architecture', '#spain', '#travel'],
+      hashtags: ["#nuwaraeliya", "#teacountry", "#srilanka", "#hillcountry", "#scenic"],
       places: [
         {
-          name: 'Sagrada Familia',
+          name: "Pedro Tea Estate",
           day: 1,
-          activities: ['Basilica tour', 'Tower climb', 'Architecture photography'],
-          budget: '€120'
+          activities: ["Tea factory tour", "Tea tasting", "Plantation walk"],
+          budget: "LKR 18,000",
         },
         {
-          name: 'Park Güell',
+          name: "Horton Plains National Park",
           day: 2,
-          activities: ['Mosaic exploration', 'City views', 'Garden walks'],
-          budget: '€95'
+          activities: ["World's End viewpoint", "Baker's Falls", "Nature hiking"],
+          budget: "LKR 25,000",
         },
         {
-          name: 'Casa Batlló',
+          name: "Gregory Lake",
           day: 3,
-          activities: ['Interior tour', 'Rooftop visit', 'Facade viewing'],
-          budget: '€85'
-        }
+          activities: ["Boat rides", "Lakeside walks", "Horse riding"],
+          budget: "LKR 15,000",
+        },
       ],
       tips: [
-        'Book Sagrada Familia tickets in advance',
-        'Visit Park Güell early morning',
-        'Wear comfortable shoes',
-        'Bring a camera for architecture shots'
+        "Pack warm clothes - it gets cold in the hills",
+        "Book train tickets in advance for scenic rides",
+        "Try fresh strawberries and cream",
+        "Visit tea factories early morning for best experience",
       ],
-      reportReason: 'Spam/Promotional',
-      reportDetails: 'Post contains promotional codes and commercial links for affiliate marketing',
-      reportedBy: 'System Auto-Detection',
-      reportDate: '2024-03-14',
-      postDate: '2024-03-14',
-      status: 'Pending',
-      priority: 'High',
+      reportReason: "Spam/Promotional",
+      reportDetails: "Post contains promotional codes and commercial links for affiliate marketing with hotels",
+      reportedBy: "System Auto-Detection",
+      reportDate: "2024-03-14",
+      postDate: "2024-03-14",
+      status: "Pending",
+      priority: "High",
       likes: 156,
       comments: 23,
       shares: 8,
@@ -203,68 +190,71 @@ const AdminModerationDashboard = () => {
         followers: 8920,
         following: 234,
         totalReports: 5,
-        accountAge: '1 year',
-        lastActive: '1 day ago',
+        accountAge: "1 year",
+        lastActive: "1 day ago",
         warnings: 2,
-        verifiedTraveler: false
+        verifiedTraveler: false,
       },
       reportInfo: {
         totalReports: 3,
-        reporters: ['System Auto-Detection', 'User789', 'TravelGuard'],
-        reasons: ['Spam/Promotional', 'Commercial Content', 'Affiliate Links']
-      }
+        reporters: ["System Auto-Detection", "User789", "TravelGuard"],
+        reasons: ["Spam/Promotional", "Commercial Content", "Affiliate Links"],
+      },
     },
     {
       id: 3,
-      type: 'Journey Post',
-      author: 'Mike Thompson',
-      authorEmail: 'mike.t@email.com',
-      authorId: 'user_789',
-      title: 'Romantic Parisian Adventure',
-      description: 'A perfect 6-day romantic getaway in Paris. Visit the Eiffel Tower, Louvre, and charming cafes along the Seine.',
-      fullDescription: 'A perfect 6-day romantic getaway in Paris. Visit the Eiffel Tower, Louvre, and charming cafes along the Seine. This comprehensive guide includes romantic restaurants, hidden gems, and the most photogenic spots in the City of Light.',
-      location: 'Paris, France',
-      duration: '6 days',
-      budget: '€2,200',
+      type: "Journey Post",
+      author: "Rohan Silva",
+      authorEmail: "rohan.s@email.com",
+      authorId: "user_789",
+      title: "Coastal Paradise in Galle",
+      description:
+        "A perfect 6-day coastal adventure in Galle. Explore the historic Dutch fort, pristine beaches, and vibrant marine life of southern Sri Lanka.",
+      fullDescription:
+        "A perfect 6-day coastal adventure in Galle. Explore the historic Dutch fort, pristine beaches, and vibrant marine life of southern Sri Lanka. This comprehensive guide includes the best beach spots, historical sites, and local seafood experiences along the southern coast.",
+      location: "Galle, Sri Lanka",
+      duration: "6 days",
+      budget: "LKR 120,000",
       images: [
-        'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        'https://images.unsplash.com/photo-1502602898536-47ad22581b52?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        'https://images.unsplash.com/photo-1431274172761-fca41d930114?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+        "https://images.unsplash.com/photo-1544735716-392fe2489ffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        "https://images.unsplash.com/photo-1605640840605-14ac1855827b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
       ],
-      hashtags: ['#paris', '#romance', '#france', '#travel', '#couples'],
+      hashtags: ["#galle", "#beaches", "#srilanka", "#coastal", "#heritage"],
       places: [
         {
-          name: 'Eiffel Tower',
+          name: "Galle Dutch Fort",
           day: 1,
-          activities: ['Tower visit', 'Seine picnic', 'Evening light show'],
-          budget: '€180'
+          activities: ["Fort exploration", "Lighthouse visit", "Colonial architecture tour"],
+          budget: "LKR 20,000",
         },
         {
-          name: 'Louvre Museum',
+          name: "Unawatuna Beach",
           day: 2,
-          activities: ['Art viewing', 'Mona Lisa', 'Palace tour'],
-          budget: '€220'
+          activities: ["Beach relaxation", "Snorkeling", "Sunset viewing"],
+          budget: "LKR 25,000",
         },
         {
-          name: 'Notre-Dame',
+          name: "Mirissa Whale Watching",
           day: 3,
-          activities: ['Cathedral visit', 'Architecture tour', 'Riverside walk'],
-          budget: '€150'
-        }
+          activities: ["Whale watching tour", "Dolphin spotting", "Ocean safari"],
+          budget: "LKR 30,000",
+        },
       ],
       tips: [
-        'Book museum tickets online',
-        'Learn basic French greetings',
-        'Enjoy long meals',
-        'Walk along the Seine at sunset'
+        "Visit Galle Fort during sunset for best photos",
+        "Try fresh seafood at local restaurants",
+        "Book whale watching tours in advance",
+        "Respect marine life during water activities",
       ],
-      reportReason: 'False Report',
-      reportDetails: 'Report appears to be malicious - content meets all community guidelines',
-      reportedBy: 'Anonymous User',
-      reportDate: '2024-03-13',
-      postDate: '2024-03-12',
-      status: 'Resolved',
-      priority: 'Low',
+      reportReason: "False Report",
+      reportDetails:
+        "Report appears to be malicious - content meets all community guidelines and provides valuable travel information",
+      reportedBy: "Anonymous User",
+      reportDate: "2024-03-13",
+      postDate: "2024-03-12",
+      status: "Resolved",
+      priority: "Low",
       likes: 412,
       comments: 45,
       shares: 28,
@@ -274,110 +264,138 @@ const AdminModerationDashboard = () => {
         followers: 1250,
         following: 890,
         totalReports: 0,
-        accountAge: '3 years',
-        lastActive: '30 minutes ago',
+        accountAge: "3 years",
+        lastActive: "30 minutes ago",
         warnings: 0,
-        verifiedTraveler: true
+        verifiedTraveler: true,
       },
       reportInfo: {
         totalReports: 1,
-        reporters: ['Anonymous User'],
-        reasons: ['False Report']
-      }
-    }
-  ]);
+        reporters: ["Anonymous User"],
+        reasons: ["False Report"],
+      },
+    },
+  ])
 
-  const filteredPosts = reportedPosts.filter(post => {
-    const matchesSearch = post.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === 'all' || post.type.toLowerCase() === filterType.toLowerCase();
-    const matchesStatus = filterStatus === 'all' || post.status.toLowerCase() === filterStatus.toLowerCase();
-    const matchesPriority = filterPriority === 'all' || post.priority.toLowerCase() === filterPriority.toLowerCase();
-    return matchesSearch && matchesType && matchesStatus && matchesPriority;
-  });
+  const filteredPosts = reportedPosts.filter((post) => {
+    const matchesSearch =
+      post.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.description.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesType = filterType === "all" || post.type.toLowerCase() === filterType.toLowerCase()
+    const matchesStatus = filterStatus === "all" || post.status.toLowerCase() === filterStatus.toLowerCase()
+    const matchesPriority = filterPriority === "all" || post.priority.toLowerCase() === filterPriority.toLowerCase()
+    return matchesSearch && matchesType && matchesStatus && matchesPriority
+  })
 
-  const handleAction = (postId, action, reason = '') => {
-    const updatedPosts = reportedPosts.map(post => {
+  const handleAction = (postId, action, reason = "") => {
+    const updatedPosts = reportedPosts.map((post) => {
       if (post.id === postId) {
-        return { ...post, status: action, actionReason: reason };
+        return { ...post, status: action, actionReason: reason }
       }
-      return post;
-    });
-    setReportedPosts(updatedPosts);
-  };
+      return post
+    })
+    setReportedPosts(updatedPosts)
+  }
 
   const handleBulkAction = (action) => {
-    const updatedPosts = reportedPosts.map(post => {
+    const updatedPosts = reportedPosts.map((post) => {
       if (selectedItems.has(post.id)) {
-        return { ...post, status: action };
+        return { ...post, status: action }
       }
-      return post;
-    });
-    setReportedPosts(updatedPosts);
-    setSelectedItems(new Set());
-  };
+      return post
+    })
+    setReportedPosts(updatedPosts)
+    setSelectedItems(new Set())
+  }
 
   const handleSelectItem = (id) => {
-    const newSelected = new Set(selectedItems);
+    const newSelected = new Set(selectedItems)
     if (newSelected.has(id)) {
-      newSelected.delete(id);
+      newSelected.delete(id)
     } else {
-      newSelected.add(id);
+      newSelected.add(id)
     }
-    setSelectedItems(newSelected);
-  };
+    setSelectedItems(newSelected)
+  }
 
   const getStatusBadgeVariant = (status) => {
     switch (status) {
-      case 'Pending': return 'secondary';
-      case 'Resolved': return 'default';
-      case 'Removed': return 'destructive';
-      case 'Warning Sent': return 'outline';
-      default: return 'outline';
+      case "Pending":
+        return "secondary"
+      case "Resolved":
+        return "default"
+      case "Removed":
+        return "destructive"
+      case "Warning Sent":
+        return "outline"
+      default:
+        return "outline"
     }
-  };
+  }
 
   const getPriorityBadgeVariant = (priority) => {
     switch (priority) {
-      case 'High': return 'destructive';
-      case 'Medium': return 'secondary';
-      case 'Low': return 'outline';
-      default: return 'outline';
+      case "High":
+        return "destructive"
+      case "Medium":
+        return "secondary"
+      case "Low":
+        return "outline"
+      default:
+        return "outline"
     }
-  };
+  }
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Pending': return <Clock className="w-4 h-4" />;
-      case 'Resolved': return <CheckCircle className="w-4 h-4" />;
-      case 'Removed': return <XCircle className="w-4 h-4" />;
-      case 'Warning Sent': return <AlertTriangle className="w-4 h-4" />;
-      default: return <AlertTriangle className="w-4 h-4" />;
+      case "Pending":
+        return <Clock className="w-4 h-4" />
+      case "Resolved":
+        return <CheckCircle className="w-4 h-4" />
+      case "Removed":
+        return <XCircle className="w-4 h-4" />
+      case "Warning Sent":
+        return <AlertTriangle className="w-4 h-4" />
+      default:
+        return <AlertTriangle className="w-4 h-4" />
     }
-  };
+  }
 
   const nextImage = () => {
     if (viewingPost && viewingPost.images.length > 1) {
-      setCurrentImageIndex((prev) => (prev + 1) % viewingPost.images.length);
+      setCurrentImageIndex((prev) => (prev + 1) % viewingPost.images.length)
     }
-  };
+  }
 
   const prevImage = () => {
     if (viewingPost && viewingPost.images.length > 1) {
-      setCurrentImageIndex((prev) => (prev - 1 + viewingPost.images.length) % viewingPost.images.length);
+      setCurrentImageIndex((prev) => (prev - 1 + viewingPost.images.length) % viewingPost.images.length)
     }
-  };
+  }
 
-  const pendingCount = reportedPosts.filter(post => post.status === 'Pending').length;
-  const resolvedToday = reportedPosts.filter(post => post.status === 'Resolved' && post.reportDate === '2024-03-15').length;
-  const removedToday = reportedPosts.filter(post => post.status === 'Removed' && post.reportDate === '2024-03-15').length;
+  const pendingCount = reportedPosts.filter((post) => post.status === "Pending").length
+  const resolvedToday = reportedPosts.filter(
+    (post) => post.status === "Resolved" && post.reportDate === "2024-03-15",
+  ).length
+  const removedToday = reportedPosts.filter(
+    (post) => post.status === "Removed" && post.reportDate === "2024-03-15",
+  ).length
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Content Moderation</h1>
+          <p className="text-gray-600">Review and moderate reported travel posts</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Shield className="w-6 h-6 text-blue-600" />
+          <span className="text-sm font-medium text-blue-600">Admin Dashboard</span>
+        </div>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -464,19 +482,19 @@ const AdminModerationDashboard = () => {
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* Bulk Actions */}
           {selectedItems.size > 0 && (
             <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <span className="text-sm text-blue-800">
-                {selectedItems.size} post{selectedItems.size > 1 ? 's' : ''} selected
+                {selectedItems.size} post{selectedItems.size > 1 ? "s" : ""} selected
               </span>
               <div className="flex gap-2 ml-auto">
-                <Button size="sm" onClick={() => handleBulkAction('Resolved')}>
+                <Button size="sm" onClick={() => handleBulkAction("Resolved")}>
                   <CheckCircle className="w-4 h-4 mr-1" />
                   Resolve All
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => handleBulkAction('Removed')}>
+                <Button size="sm" variant="destructive" onClick={() => handleBulkAction("Removed")}>
                   <Trash2 className="w-4 h-4 mr-1" />
                   Remove All
                 </Button>
@@ -497,7 +515,7 @@ const AdminModerationDashboard = () => {
                 onChange={() => handleSelectItem(post.id)}
                 className="mt-1 rounded"
               />
-              
+
               <div className="flex-1">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex gap-2 flex-wrap">
@@ -509,12 +527,10 @@ const AdminModerationDashboard = () => {
                       {getStatusIcon(post.status)}
                       <span className="ml-1">{post.status}</span>
                     </Badge>
-                    <Badge variant={getPriorityBadgeVariant(post.priority)}>
-                      {post.priority} Priority
-                    </Badge>
+                    <Badge variant={getPriorityBadgeVariant(post.priority)}>{post.priority} Priority</Badge>
                     <Badge variant="destructive">
                       <Flag className="w-3 h-3 mr-1" />
-                      {post.reportInfo.totalReports} report{post.reportInfo.totalReports > 1 ? 's' : ''}
+                      {post.reportInfo.totalReports} report{post.reportInfo.totalReports > 1 ? "s" : ""}
                     </Badge>
                   </div>
                   <div className="text-right">
@@ -528,8 +544,8 @@ const AdminModerationDashboard = () => {
                   <div className="lg:col-span-4">
                     <div className="space-y-3">
                       <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                        <img 
-                          src={post.images[0]} 
+                        <img
+                          src={post.images[0] || "/placeholder.svg"}
                           alt={post.title}
                           className="w-full h-full object-cover"
                         />
@@ -538,8 +554,8 @@ const AdminModerationDashboard = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setViewingPost(post);
-                          setCurrentImageIndex(0);
+                          setViewingPost(post)
+                          setCurrentImageIndex(0)
                         }}
                         className="w-full"
                       >
@@ -559,9 +575,7 @@ const AdminModerationDashboard = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{post.author}</p>
-                          {post.authorStats.verifiedTraveler && (
-                            <CheckCircle className="w-4 h-4 text-blue-500" />
-                          )}
+                          {post.authorStats.verifiedTraveler && <CheckCircle className="w-4 h-4 text-blue-500" />}
                         </div>
                         <p className="text-sm text-gray-600">{post.authorEmail}</p>
                         <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
@@ -577,14 +591,9 @@ const AdminModerationDashboard = () => {
                       <div className="flex items-center gap-2 mb-2">
                         <MapPin className="w-4 h-4 text-gray-500" />
                         <span className="text-sm font-medium">{post.location}</span>
-                       
                       </div>
                       <h3 className="font-semibold text-lg mb-2">{post.title}</h3>
-                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg mb-3">
-                        {post.description}
-                      </p>
-                      
-                      
+                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg mb-3">{post.description}</p>
                     </div>
 
                     {/* Report Details */}
@@ -594,14 +603,14 @@ const AdminModerationDashboard = () => {
                         <p className="text-sm font-medium text-red-800">Primary Report: {post.reportReason}</p>
                       </div>
                       <p className="text-xs text-red-600 mb-2">{post.reportDetails}</p>
-                      <p className="text-xs text-red-600 mb-2">
-                        Reported by: {post.reportInfo.reporters.join(', ')}
-                      </p>
-                      
+                      <p className="text-xs text-red-600 mb-2">Reported by: {post.reportInfo.reporters.join(", ")}</p>
+
                       {/* All Report Reasons in Scrollable Container */}
                       {post.reportInfo.totalReports >= 3 && (
                         <div className="mt-2">
-                          <p className="text-xs text-red-600 mb-1 font-medium">All Report Reasons ({post.reportInfo.totalReports} reports):</p>
+                          <p className="text-xs text-red-600 mb-1 font-medium">
+                            All Report Reasons ({post.reportInfo.totalReports} reports):
+                          </p>
                           <div className="max-h-16 overflow-y-auto bg-red-100 rounded p-2 space-y-1">
                             {post.reportInfo.reasons.map((reason, idx) => (
                               <div key={idx} className="flex items-center gap-2">
@@ -612,7 +621,7 @@ const AdminModerationDashboard = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* For less than 3 reports, show as badges */}
                       {post.reportInfo.totalReports < 3 && post.reportInfo.reasons.length > 1 && (
                         <div className="mt-2">
@@ -631,20 +640,16 @@ const AdminModerationDashboard = () => {
 
                   {/* Actions */}
                   <div className="lg:col-span-3 space-y-3">
-                    {post.status === 'Pending' && (
+                    {post.status === "Pending" && (
                       <div className="flex flex-col gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleAction(post.id, 'Resolved')}
-                          className="w-full"
-                        >
+                        <Button size="sm" onClick={() => handleAction(post.id, "Resolved")} className="w-full">
                           <CheckCircle className="w-4 h-4 mr-1" />
                           Resolve Reports
                         </Button>
-                        
+
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="w-full">
+                            <Button size="sm" variant="outline" className="w-full bg-transparent">
                               <Mail className="w-4 h-4 mr-1" />
                               Send Warning
                             </Button>
@@ -672,20 +677,22 @@ const AdminModerationDashboard = () => {
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <Textarea 
+                              <Textarea
                                 placeholder="Enter warning message..."
                                 value={warningMessage}
                                 onChange={(e) => setWarningMessage(e.target.value)}
                                 className="min-h-[100px]"
                               />
                               <div className="flex justify-end gap-2">
-                                <Button variant="outline" onClick={() => setWarningMessage('')}>
+                                <Button variant="outline" onClick={() => setWarningMessage("")}>
                                   Cancel
                                 </Button>
-                                <Button onClick={() => {
-                                  handleAction(post.id, 'Warning Sent');
-                                  setWarningMessage('');
-                                }}>
+                                <Button
+                                  onClick={() => {
+                                    handleAction(post.id, "Warning Sent")
+                                    setWarningMessage("")
+                                  }}
+                                >
                                   Send Warning
                                 </Button>
                               </div>
@@ -723,20 +730,23 @@ const AdminModerationDashboard = () => {
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <Textarea 
+                              <Textarea
                                 placeholder="Additional notes (optional)..."
                                 value={actionReason}
                                 onChange={(e) => setActionReason(e.target.value)}
                                 className="min-h-[80px]"
                               />
                               <div className="flex justify-end gap-2">
-                                <Button variant="outline" onClick={() => setActionReason('')}>
+                                <Button variant="outline" onClick={() => setActionReason("")}>
                                   Cancel
                                 </Button>
-                                <Button variant="destructive" onClick={() => {
-                                  handleAction(post.id, 'Removed', actionReason);
-                                  setActionReason('');
-                                }}>
+                                <Button
+                                  variant="destructive"
+                                  onClick={() => {
+                                    handleAction(post.id, "Removed", actionReason)
+                                    setActionReason("")
+                                  }}
+                                >
                                   Remove Post
                                 </Button>
                               </div>
@@ -744,10 +754,10 @@ const AdminModerationDashboard = () => {
                           </DialogContent>
                         </Dialog>
 
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
-                          onClick={() => handleAction(post.id, 'Resolved')}
+                          onClick={() => handleAction(post.id, "Resolved")}
                           className="w-full"
                         >
                           <XCircle className="w-4 h-4 mr-1" />
@@ -755,17 +765,11 @@ const AdminModerationDashboard = () => {
                         </Button>
                       </div>
                     )}
-                    
-                    {post.status !== 'Pending' && (
+
+                    {post.status !== "Pending" && (
                       <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-600">
-                          Status: {post.status}
-                        </p>
-                        {post.actionReason && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Reason: {post.actionReason}
-                          </p>
-                        )}
+                        <p className="text-sm text-gray-600">Status: {post.status}</p>
+                        {post.actionReason && <p className="text-xs text-gray-500 mt-1">Reason: {post.actionReason}</p>}
                       </div>
                     )}
                   </div>
@@ -778,7 +782,7 @@ const AdminModerationDashboard = () => {
 
       {/* View Full Post Dialog */}
       <Dialog open={viewingPost !== null} onOpenChange={() => setViewingPost(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Journey Post Details</DialogTitle>
             <DialogDescription>
@@ -790,8 +794,8 @@ const AdminModerationDashboard = () => {
               {/* Journey Header */}
               <div className="relative">
                 <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
-                  <img 
-                    src={viewingPost.images[currentImageIndex]} 
+                  <img
+                    src={viewingPost.images[currentImageIndex] || "/placeholder.svg"}
                     alt={viewingPost.title}
                     className="w-full h-full object-cover"
                   />
@@ -819,7 +823,7 @@ const AdminModerationDashboard = () => {
                         <div
                           key={imgIndex}
                           className={`w-2 h-2 rounded-full ${
-                            currentImageIndex === imgIndex ? 'bg-white' : 'bg-white/50'
+                            currentImageIndex === imgIndex ? "bg-white" : "bg-white/50"
                           }`}
                         />
                       ))}
@@ -953,7 +957,9 @@ const AdminModerationDashboard = () => {
                     <div key={index} className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <h5 className="font-medium">{place.name}</h5>
-                        <Badge variant="outline" className="text-xs">Day {place.day}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          Day {place.day}
+                        </Badge>
                       </div>
                       <div className="space-y-2">
                         <div className="text-sm">
@@ -978,7 +984,10 @@ const AdminModerationDashboard = () => {
                 <h4 className="font-medium mb-3">Travel Tips</h4>
                 <div className="space-y-2">
                   {viewingPost.tips.map((tip, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                    >
                       <Lightbulb className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                       <p className="text-sm text-blue-800">{tip}</p>
                     </div>
@@ -996,7 +1005,7 @@ const AdminModerationDashboard = () => {
                   <strong>Details:</strong> {viewingPost.reportDetails}
                 </p>
                 <p className="text-sm text-red-700">
-                  <strong>Reported by:</strong> {viewingPost.reportInfo.reporters.join(', ')}
+                  <strong>Reported by:</strong> {viewingPost.reportInfo.reporters.join(", ")}
                 </p>
                 {viewingPost.reportInfo.reasons.length > 1 && (
                   <div className="mt-2">
@@ -1013,33 +1022,44 @@ const AdminModerationDashboard = () => {
               </div>
 
               {/* Action Buttons in Dialog */}
-              {viewingPost.status === 'Pending' && (
+              {viewingPost.status === "Pending" && (
                 <div className="flex gap-2 pt-4 border-t">
-                  <Button onClick={() => {
-                    handleAction(viewingPost.id, 'Resolved');
-                    setViewingPost(null);
-                  }}>
+                  <Button
+                    onClick={() => {
+                      handleAction(viewingPost.id, "Resolved")
+                      setViewingPost(null)
+                    }}
+                  >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Resolve Reports
                   </Button>
-                  <Button variant="outline" onClick={() => {
-                    setShowModerationDialog(true);
-                    setModerationAction('warning');
-                  }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowModerationDialog(true)
+                      setModerationAction("warning")
+                    }}
+                  >
                     <Mail className="w-4 h-4 mr-2" />
                     Send Warning
                   </Button>
-                  <Button variant="destructive" onClick={() => {
-                    setShowModerationDialog(true);
-                    setModerationAction('remove');
-                  }}>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      setShowModerationDialog(true)
+                      setModerationAction("remove")
+                    }}
+                  >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Remove Post
                   </Button>
-                  <Button variant="outline" onClick={() => {
-                    handleAction(viewingPost.id, 'Resolved');
-                    setViewingPost(null);
-                  }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      handleAction(viewingPost.id, "Resolved")
+                      setViewingPost(null)
+                    }}
+                  >
                     <XCircle className="w-4 h-4 mr-2" />
                     Dismiss Reports
                   </Button>
@@ -1050,7 +1070,7 @@ const AdminModerationDashboard = () => {
         </DialogContent>
       </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default AdminModerationDashboard;
+export default AdminModerationDashboard

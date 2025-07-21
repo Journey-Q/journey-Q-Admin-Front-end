@@ -4,7 +4,6 @@ import type React from "react"
 import { useState } from "react"
 import {
   DollarSign,
-  TrendingUp,
   Calendar,
   Users,
   Download,
@@ -22,11 +21,13 @@ import {
   Phone,
   Globe,
   Eye,
+  Percent,
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
 
 interface CommissionData {
   id: string
@@ -67,7 +68,6 @@ const Commissions: React.FC = () => {
     "Travel Service": 10.0,
     "Tour Service": 15.0,
   })
-
   const [tempSettings, setTempSettings] = useState<CommissionSettings>(commissionSettings)
 
   // Mock data with comprehensive information
@@ -216,11 +216,7 @@ const Commissions: React.FC = () => {
   // Calculate stats
   const stats = {
     totalCommissions: commissions.reduce((sum, commission) => sum + commission.amount, 0),
-    thisMonthCommissions: commissions
-      .filter((c) => c.month === "2024-02")
-      .reduce((sum, commission) => sum + commission.amount, 0),
     totalRevenue: commissions.reduce((sum, commission) => sum + commission.revenue, 0),
-    activeProviders: uniqueProviders.length,
   }
 
   const getFilteredCommissions = () => {
@@ -271,10 +267,62 @@ const Commissions: React.FC = () => {
     return commissions.filter((c) => c.providerType === type).reduce((sum, c) => sum + c.amount, 0)
   }
 
+  const getPercentageColor = (percentage: number) => {
+    if (percentage >= 15) return "text-green-600 bg-green-50"
+    if (percentage >= 12) return "text-blue-600 bg-blue-50"
+    if (percentage >= 10) return "text-orange-600 bg-orange-50"
+    return "text-red-600 bg-red-50"
+  }
+
   return (
     <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="p-6 bg-white shadow-lg border-0">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center">
+              <Percent className="w-6 h-6 text-indigo-500" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-900">Commission Rates</p>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600 flex items-center gap-1">
+                    <Building2 className="w-3 h-3" />
+                    Hotel
+                  </span>
+                  <span
+                    className={`text-xs font-bold px-2 py-1 rounded ${getPercentageColor(commissionSettings.Hotel)}`}
+                  >
+                    {commissionSettings.Hotel}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600 flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Tour
+                  </span>
+                  <span
+                    className={`text-xs font-bold px-2 py-1 rounded ${getPercentageColor(commissionSettings["Tour Service"])}`}
+                  >
+                    {commissionSettings["Tour Service"]}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600 flex items-center gap-1">
+                    <CreditCard className="w-3 h-3" />
+                    Travel
+                  </span>
+                  <span
+                    className={`text-xs font-bold px-2 py-1 rounded ${getPercentageColor(commissionSettings["Travel Service"])}`}
+                  >
+                    {commissionSettings["Travel Service"]}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
@@ -283,17 +331,6 @@ const Commissions: React.FC = () => {
             <div>
               <p className="text-2xl font-bold">Rs {stats.totalCommissions.toLocaleString()}</p>
               <p className="text-sm text-gray-600">Total Commissions</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-6 bg-white shadow-lg border-0">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">Rs {stats.thisMonthCommissions.toLocaleString()}</p>
-              <p className="text-sm text-gray-600">This Month</p>
             </div>
           </div>
         </Card>
@@ -308,17 +345,7 @@ const Commissions: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card className="p-6 bg-white shadow-lg border-0">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-orange-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.activeProviders}</p>
-              <p className="text-sm text-gray-600">Active Providers</p>
-            </div>
-          </div>
-        </Card>
+        
       </div>
 
       {/* Tabs */}
@@ -428,7 +455,7 @@ const Commissions: React.FC = () => {
                     <th className="text-left p-3 font-medium text-gray-900">Type</th>
                     <th className="text-left p-3 font-medium text-gray-900">Commission</th>
                     <th className="text-left p-3 font-medium text-gray-900">Revenue</th>
-                    <th className="text-left p-3 font-medium text-gray-900">Rate</th>
+                    <th className="text-left p-3 font-medium text-gray-900">Commission Rate</th>
                     <th className="text-left p-3 font-medium text-gray-900">Date</th>
                     <th className="text-left p-3 font-medium text-gray-900">Transaction ID</th>
                     <th className="text-left p-3 font-medium text-gray-900">Actions</th>
@@ -463,7 +490,16 @@ const Commissions: React.FC = () => {
                           <span className="font-medium">Rs {commission.revenue.toLocaleString()}</span>
                         </td>
                         <td className="p-3">
-                          <span className="font-medium">{commission.percentage}%</span>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`px-3 py-1 rounded-full text-sm font-bold ${getPercentageColor(commission.percentage)}`}
+                            >
+                              {commission.percentage}%
+                            </div>
+                            <div className="w-16">
+                              <Progress value={(commission.percentage / 20) * 100} className="h-2" />
+                            </div>
+                          </div>
                         </td>
                         <td className="p-3 text-gray-600">{new Date(commission.date).toLocaleDateString()}</td>
                         <td className="p-3">
@@ -494,8 +530,8 @@ const Commissions: React.FC = () => {
           </div>
           <div className="space-y-6">
             {Object.entries(tempSettings).map(([type, rate]) => (
-              <div key={type} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
+              <div key={type} className="flex items-center justify-between p-6 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-[#0088cc]/10 rounded-xl flex items-center justify-center">
                     {getTypeIcon(type)}
                   </div>
@@ -507,8 +543,7 @@ const Commissions: React.FC = () => {
                     </p>
                   </div>
                 </div>
-
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-4">
                   <Button
                     variant="outline"
                     size="sm"
@@ -516,12 +551,13 @@ const Commissions: React.FC = () => {
                   >
                     <Minus className="w-4 h-4" />
                   </Button>
-
-                  <div className="text-center min-w-[80px]">
-                    <div className="text-2xl font-bold text-gray-900">{rate}%</div>
-                    <div className="text-xs text-gray-500">Commission</div>
+                  <div className="text-center min-w-[100px]">
+                    <div className={`text-3xl font-bold px-4 py-2 rounded-lg ${getPercentageColor(rate)}`}>{rate}%</div>
+                    <div className="text-xs text-gray-500 mt-1">Commission Rate</div>
+                    <div className="w-20 mt-2">
+                      <Progress value={(rate / 25) * 100} className="h-2" />
+                    </div>
                   </div>
-
                   <Button
                     variant="outline"
                     size="sm"
@@ -532,7 +568,6 @@ const Commissions: React.FC = () => {
                 </div>
               </div>
             ))}
-
             <div className="flex justify-end space-x-3 pt-4 border-t">
               <Button variant="outline" onClick={resetSettings}>
                 Reset Changes
@@ -557,9 +592,9 @@ const Commissions: React.FC = () => {
             {uniqueProviders.map((provider) => {
               const providerCommissions = commissions.filter((c) => c.serviceProvider === provider)
               const totalCommission = providerCommissions.reduce((sum, c) => sum + c.amount, 0)
-              const totalRevenue = providerCommissions.reduce((sum, c) => sum + c.revenue, 0)
+              const averageRate =
+                providerCommissions.reduce((sum, c) => sum + c.percentage, 0) / providerCommissions.length
               const isExpanded = expandedProviders.includes(provider)
-
               return (
                 <div key={provider} className="border rounded-lg">
                   <button
@@ -577,16 +612,17 @@ const Commissions: React.FC = () => {
                         </div>
                       </div>
                     </div>
-
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
                         <div className="font-semibold text-green-600">Rs {totalCommission.toLocaleString()}</div>
                         <div className="text-sm text-gray-500">Total Commission</div>
                       </div>
+                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${getPercentageColor(averageRate)}`}>
+                        {averageRate.toFixed(1)}%
+                      </div>
                       {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                     </div>
                   </button>
-
                   {isExpanded && (
                     <div className="border-t bg-gray-50 p-4">
                       <div className="space-y-2">
@@ -601,10 +637,18 @@ const Commissions: React.FC = () => {
                                 {new Date(commission.date).toLocaleDateString()}
                               </span>
                             </div>
-
-                            <div className="text-right">
-                              <div className="font-medium text-green-600">Rs {commission.amount.toLocaleString()}</div>
-                              <div className="text-xs text-gray-500">{commission.percentage}% commission</div>
+                            <div className="flex items-center space-x-3">
+                              <div className="text-right">
+                                <div className="font-medium text-green-600">
+                                  Rs {commission.amount.toLocaleString()}
+                                </div>
+                                <div className="text-xs text-gray-500">Commission</div>
+                              </div>
+                              <div
+                                className={`px-2 py-1 rounded text-xs font-bold ${getPercentageColor(commission.percentage)}`}
+                              >
+                                {commission.percentage}%
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -625,7 +669,10 @@ const Commissions: React.FC = () => {
             const monthCommissions = commissions.filter((c) => c.month === month)
             const monthTotal = monthCommissions.reduce((sum, c) => sum + c.amount, 0)
             const monthRevenue = monthCommissions.reduce((sum, c) => sum + c.revenue, 0)
-
+            const avgRate =
+              monthCommissions.length > 0
+                ? monthCommissions.reduce((sum, c) => sum + c.percentage, 0) / monthCommissions.length
+                : 0
             return (
               <Card key={month} className="p-6 bg-white shadow-lg border-0">
                 <div className="flex items-center justify-between mb-4">
@@ -637,9 +684,13 @@ const Commissions: React.FC = () => {
                       {new Date(month + "-01").toLocaleDateString("en-US", { year: "numeric", month: "long" })}
                     </h3>
                   </div>
-                  <Badge className="bg-[#0088cc]/10 text-[#0088cc]">{monthCommissions.length} transactions</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-[#0088cc]/10 text-[#0088cc]">{monthCommissions.length} transactions</Badge>
+                    <div className={`px-2 py-1 rounded text-sm font-bold ${getPercentageColor(avgRate)}`}>
+                      {avgRate.toFixed(1)}% avg
+                    </div>
+                  </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="text-center p-3 bg-green-50 rounded-lg">
                     <div className="text-2xl font-bold text-green-600">Rs {monthTotal.toLocaleString()}</div>
@@ -650,19 +701,28 @@ const Commissions: React.FC = () => {
                     <div className="text-sm text-blue-600">Total Revenue</div>
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   {["Hotel", "Travel Service", "Tour Service"].map((type) => {
                     const typeCommissions = monthCommissions.filter((c) => c.providerType === type)
                     const typeTotal = typeCommissions.reduce((sum, c) => sum + c.amount, 0)
-
+                    const typeAvgRate =
+                      typeCommissions.length > 0
+                        ? typeCommissions.reduce((sum, c) => sum + c.percentage, 0) / typeCommissions.length
+                        : 0
                     return (
-                      <div key={type} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div key={type} className="flex items-center justify-between p-3 bg-gray-50 rounded">
                         <div className="flex items-center space-x-2">
                           {getTypeIcon(type)}
                           <span className="text-sm font-medium">{type}</span>
                         </div>
-                        <div className="text-sm font-semibold">Rs {typeTotal.toLocaleString()}</div>
+                        <div className="flex items-center space-x-3">
+                          <div className="text-sm font-semibold">Rs {typeTotal.toLocaleString()}</div>
+                          {typeCommissions.length > 0 && (
+                            <div className={`px-2 py-1 rounded text-xs font-bold ${getPercentageColor(typeAvgRate)}`}>
+                              {typeAvgRate.toFixed(1)}%
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )
                   })}
@@ -694,13 +754,11 @@ const Commissions: React.FC = () => {
                   ×
                 </button>
               </div>
-
               {/* Provider Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Commission Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Commission Details</h3>
-
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Commission Amount:</span>
@@ -708,44 +766,40 @@ const Commissions: React.FC = () => {
                         Rs {selectedProvider.amount.toLocaleString()}
                       </span>
                     </div>
-
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600">Commission Rate:</span>
-                      <span className="font-medium">{selectedProvider.percentage}%</span>
+                      <div
+                        className={`px-3 py-1 rounded-full font-bold ${getPercentageColor(selectedProvider.percentage)}`}
+                      >
+                        {selectedProvider.percentage}%
+                      </div>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-gray-600">Revenue Generated:</span>
                       <span className="font-medium">Rs {selectedProvider.revenue.toLocaleString()}</span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-gray-600">Transaction ID:</span>
                       <span className="font-mono text-sm">{selectedProvider.transactionId}</span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-gray-600">Payment Method:</span>
                       <span className="font-medium">{selectedProvider.paymentMethod}</span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-gray-600">Customer Count:</span>
                       <span className="font-medium">{selectedProvider.customerCount}</span>
                     </div>
                   </div>
                 </div>
-
                 {/* Contact & Location */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Contact & Location</h3>
-
                   <div className="space-y-3">
                     <div>
                       <span className="text-gray-600 text-sm">Address:</span>
                       <p className="text-gray-800 mt-1 leading-relaxed">{selectedProvider.address}</p>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-gray-600">Location:</span>
                       <span className="font-medium flex items-center gap-1">
@@ -753,7 +807,6 @@ const Commissions: React.FC = () => {
                         {selectedProvider.location}
                       </span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-gray-600">Phone:</span>
                       <span className="font-medium flex items-center gap-1">
@@ -761,7 +814,6 @@ const Commissions: React.FC = () => {
                         {selectedProvider.phone}
                       </span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-gray-600">Website:</span>
                       <span className="font-medium flex items-center gap-1">
@@ -769,7 +821,6 @@ const Commissions: React.FC = () => {
                         {selectedProvider.website}
                       </span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-gray-600">Transaction Date:</span>
                       <span className="font-medium">{new Date(selectedProvider.date).toLocaleDateString()}</span>
@@ -777,7 +828,6 @@ const Commissions: React.FC = () => {
                   </div>
                 </div>
               </div>
-
               {/* Action Buttons */}
               <div className="flex gap-3 mt-8 pt-6 border-t">
                 <Button onClick={handleCloseModal} className="bg-[#0088cc] hover:bg-[#0088cc]/90">

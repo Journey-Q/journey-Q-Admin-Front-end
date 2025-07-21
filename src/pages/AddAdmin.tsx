@@ -491,15 +491,7 @@ const AddAdmin = () => {
 
                       {/* Actions */}
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditAdmin(admin)}
-                          className="hover:bg-blue-50 hover:border-blue-300 bg-transparent"
-                          disabled={loading || !isAuthenticated}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                     
                         <Button
                           variant="outline"
                           size="sm"
