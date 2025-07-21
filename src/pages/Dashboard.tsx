@@ -48,8 +48,8 @@ const Dashboard = () => {
       setAdminData(profileData);
       
     } catch (error) {
-      console.error('Failed to load profile:', error);
-      toast.error('Failed to load profile data');
+      // console.error('Failed to load profile:', error);
+      // toast.error('Failed to load profile data');
       
       // If API call fails due to unauthorized, logout and redirect
       if (error instanceof Error && (error.message.includes('Unauthorized') || error.message.includes('token'))) {
@@ -514,40 +514,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Quick Actions Footer */}
-        <Card className="p-6 shadow-md border-0 bg-white">
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Quick Actions & System Tools</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button 
-              className="h-16 bg-[#0088cc] hover:bg-[#006aa3] text-white flex flex-col items-center justify-center space-y-2"
-              onClick={() => toast.info('Navigate to Service Providers page')}
-            >
-              <Building2 className="w-6 h-6" />
-              <span>Manage Providers</span>
-            </Button>
-            <Button 
-              className="h-16 bg-[#2953A6] hover:bg-[#1e3d7a] text-white flex flex-col items-center justify-center space-y-2"
-              onClick={() => toast.info('Navigate to Users page')}
-            >
-              <Users className="w-6 h-6" />
-              <span>Manage Users</span>
-            </Button>
-            <Button 
-              className="h-16 bg-red-500 hover:bg-red-600 text-white flex flex-col items-center justify-center space-y-2"
-              onClick={() => toast.info('Navigate to Moderation page')}
-            >
-              <AlertTriangle className="w-6 h-6" />
-              <span>Moderation</span>
-            </Button>
-            <Button 
-              className="h-16 bg-green-500 hover:bg-green-600 text-white flex flex-col items-center justify-center space-y-2"
-              onClick={() => toast.info('Navigate to Analytics page')}
-            >
-              <TrendingUp className="w-6 h-6" />
-              <span>Analytics</span>
-            </Button>
-          </div>
-        </Card>
+        
       </div>
     </div>
   );
