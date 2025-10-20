@@ -41,8 +41,8 @@ import {
 import { toast } from "sonner"
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:8080'
-// const API_BASE_URL = 'https://serviceprovidersservice-production.up.railway.app'
+// const API_BASE_URL = 'http://localhost:8080'
+const API_BASE_URL = 'https://adminservice-production-19d3.up.railway.app'
 
 const API_ENDPOINTS = {
   getAllPromotions: "/admin/auth/promotions/all",

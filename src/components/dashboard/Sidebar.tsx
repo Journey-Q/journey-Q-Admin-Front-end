@@ -49,24 +49,24 @@ const menuItems = [
     path: "/providers",
     description: "",
   },
-  {
-    icon: Shield,
-    label: "Content Moderation",
-    path: "/moderation",
-    description: "",
-  },
+  // {
+  //   icon: Shield,
+  //   label: "Content Moderation",
+  //   path: "/moderation",
+  //   description: "",
+  // },
   {
     icon: Megaphone,
     label: "Promotions & Ads",
     path: "/promotions",
     description: "",
   },
-  {
-    icon: Gift,
-    label: "Rewards Program",
-    path: "/rewards",
-    description: "",
-  },
+  // {
+  //   icon: Gift,
+  //   label: "Rewards Program",
+  //   path: "/rewards",
+  //   description: "",
+  // },
   {
     icon: CreditCard,
     label: "Payment Monitor",
