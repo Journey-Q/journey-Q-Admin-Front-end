@@ -43,8 +43,8 @@ const AddAdmin = () => {
   }
 
   // API Base URL - matching your login component
-  const API_BASE_URL = 'https://serviceprovidersservice-production.up.railway.app/admin';
-    // const API_BASE_URL = 'http://localhost:8080/admin';
+  // const API_BASE_URL = 'https://serviceprovidersservice-production.up.railway.app/admin';
+    const API_BASE_URL = 'http://localhost:8080/admin';
 
 
   // Fetch all admins on component mount

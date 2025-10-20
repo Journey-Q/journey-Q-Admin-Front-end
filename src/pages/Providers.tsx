@@ -87,7 +87,7 @@ const Providers = () => {
   // API calls
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const token = getAuthToken()
-    const baseURL = "https://serviceprovidersservice-production.up.railway.app/admin/auth"
+    const baseURL = "http://localhost:8080/admin/auth"
 
     try {
       const response = await fetch(`${baseURL}${endpoint}`, {
