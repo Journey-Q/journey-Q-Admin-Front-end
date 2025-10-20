@@ -64,7 +64,7 @@ const Subscriptions = () => {
 
   // API Base URL
   // const API_BASE_URL = 'http://localhost:8080/service'
-    const API_BASE_URL = 'https://serviceprovidersservice-production.up.railway.app/service'
+    const API_BASE_URL = 'https://serviceprovidersservice-production-8f10.up.railway.app/service'
 
 
   // Get the auth token from localStorage

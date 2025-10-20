@@ -3,130 +3,67 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 import { Users, UserX, UserCheck, AlertTriangle, Search, Filter, MoreHorizontal, Eye, Ban, CheckCircle, Crown, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const Accounts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [hoveredUser, setHoveredUser] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://socialmediaservice-production-2b10.up.railway.app/auth/all');
+        if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
+        const data = await response.json();
+        setUsers(data);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const stats = [
     {
       title: 'Total Users',
-      value: '24,847',
+      value: users.length.toLocaleString(),
       change: '',
       icon: <Users className="w-6 h-6" />,
       color: 'bg-blue-500'
     },
     {
       title: 'Active Accounts',
-      value: '23,651',
+      value: users.filter(u => u.status?.toLowerCase() === 'active' || !u.status).length.toLocaleString(),
       change: '',
       icon: <UserCheck className="w-6 h-6" />,
       color: 'bg-green-500'
     },
     {
       title: 'Suspended',
-      value: '1,196',
+      value: users.filter(u => u.status?.toLowerCase() === 'suspended').length.toLocaleString(),
       change: '',
       icon: <UserX className="w-6 h-6" />,
       color: 'bg-red-500'
     },
     {
       title: 'Policy Violations',
-      value: '127',
+      value: users.filter(u => u.violations && u.violations > 0).length.toLocaleString(),
       change: '',
       icon: <AlertTriangle className="w-6 h-6" />,
       color: 'bg-yellow-500'
-    }
-  ];
-
-  const users = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      joinDate: '2024-01-15',
-      lastActive: '2024-07-06',
-      status: 'Active',
-      followers: '45K',
-      posts: 127,
-      violations: 0,
-      tripFluencer: true,
-      earnings: '$2,450',
-      premium: true,
-      premiumSince: '2024-02-01',
-      location: 'New York, USA',
-      bio: 'Travel enthusiast and professional photographer'
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      email: 'mike.chen@email.com',
-      joinDate: '2023-11-22',
-      lastActive: '2024-07-05',
-      status: 'Active',
-      followers: '78K',
-      posts: 203,
-      violations: 1,
-      tripFluencer: true,
-      earnings: '$4,890',
-      premium: true,
-      premiumSince: '2023-12-15',
-      location: 'San Francisco, USA',
-      bio: 'Adventure seeker and content creator'
-    },
-    {
-      id: 3,
-      name: 'Emma Rodriguez',
-      email: 'emma.r@email.com',
-      joinDate: '2024-03-08',
-      lastActive: '2024-07-07',
-      status: 'Active',
-      followers: '1.2K',
-      posts: 89,
-      violations: 0,
-      tripFluencer: false,
-      earnings: '$0',
-      premium: false,
-      premiumSince: null,
-      location: 'Madrid, Spain',
-      bio: 'Food and culture explorer'
-    },
-    {
-      id: 4,
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      joinDate: '2024-02-10',
-      lastActive: '2024-06-20',
-      status: 'Suspended',
-      followers: '892',
-      posts: 45,
-      violations: 3,
-      tripFluencer: false,
-      earnings: '$0',
-      premium: false,
-      premiumSince: null,
-      location: 'London, UK',
-      bio: 'Backpacker and budget traveler'
-    },
-    {
-      id: 5,
-      name: 'Lisa Wang',
-      email: 'lisa.wang@email.com',
-      joinDate: '2023-12-05',
-      lastActive: '2024-07-06',
-      status: 'Under Review',
-      followers: '15K',
-      posts: 156,
-      violations: 2,
-      tripFluencer: false,
-      earnings: '$0',
-      premium: true,
-      premiumSince: '2024-01-10',
-      location: 'Tokyo, Japan',
-      bio: 'Cultural historian and travel writer'
     }
   ];
 
@@ -140,9 +77,10 @@ const Accounts = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || user.status.toLowerCase() === filterStatus.toLowerCase();
+    const matchesSearch = (user.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === 'all' || (user.status?.toLowerCase() || 'active') === filterStatus.toLowerCase();
     return matchesSearch && matchesFilter;
   });
 
@@ -226,55 +164,80 @@ const Accounts = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-3 font-medium text-gray-900">User</th>
-                <th className="text-left p-3 font-medium text-gray-900">Status</th>
-                <th className="text-left p-3 font-medium text-gray-900">Followers</th>
-                <th className="text-left p-3 font-medium text-gray-900">Posts</th>
-                <th className="text-left p-3 font-medium text-gray-900">Trip Fluencer</th>
-                <th className="text-left p-3 font-medium text-gray-900">Premium</th>
-                <th className="text-left p-3 font-medium text-gray-900">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3">
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
-                      <p className="text-xs text-gray-400">Joined: {user.joinDate}</p>
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <Badge className={getStatusColor(user.status)}>
-                      {user.status}
-                    </Badge>
-                  </td>
-                  <td className="p-3">{user.followers}</td>
-                  <td className="p-3">{user.posts}</td>
-                  <td className="p-3">
-                    {user.tripFluencer ? (
-                      <Badge className="bg-yellow-100 text-yellow-800">
-                        Yes
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-[#0088cc] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading users...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+              <p className="text-red-600 font-medium">Error loading users</p>
+              <p className="text-gray-600 text-sm mt-2">{error}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-3 font-medium text-gray-900">User</th>
+                  <th className="text-left p-3 font-medium text-gray-900">Status</th>
+                  <th className="text-left p-3 font-medium text-gray-900">Followers</th>
+                  <th className="text-left p-3 font-medium text-gray-900">Posts</th>
+                  <th className="text-left p-3 font-medium text-gray-900">Trip Fluencer</th>
+                  <th className="text-left p-3 font-medium text-gray-900">Premium</th>
+                  <th className="text-left p-3 font-medium text-gray-900">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-gray-500">
+                      No users found matching your search criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user) => (
+                  <tr key={user._id || user.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3">
+                      <div>
+                        <p className="font-medium">{user.name || user.username || 'N/A'}</p>
+                        <p className="text-sm text-gray-500">{user.email || 'N/A'}</p>
+                        <p className="text-xs text-gray-400">
+                          Joined: {user.joinDate || user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <Badge className={getStatusColor(user.status || 'Active')}>
+                        {user.status || 'Active'}
                       </Badge>
-                    ) : (
-                      <Badge className="bg-gray-100 text-gray-800">No</Badge>
-                    )}
-                  </td>
-                  <td className="p-3">
-                    {user.premium ? (
-                      <Badge className="bg-purple-100 text-purple-800">
-                        <Crown className="w-3 h-3 mr-1" />
-                        Premium
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-gray-100 text-gray-800">Free</Badge>
-                    )}
-                  </td>
+                    </td>
+                    <td className="p-3">{user.followers || user.followersCount || '0'}</td>
+                    <td className="p-3">{user.posts || user.postsCount || '0'}</td>
+                    <td className="p-3">
+                      {user.tripFluencer || user.isTripFluencer ? (
+                        <Badge className="bg-yellow-100 text-yellow-800">
+                          Yes
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-gray-100 text-gray-800">No</Badge>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {user.premium || user.isPremium ? (
+                        <Badge className="bg-purple-100 text-purple-800">
+                          <Crown className="w-3 h-3 mr-1" />
+                          Premium
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-gray-100 text-gray-800">Free</Badge>
+                      )}
+                    </td>
                   <td className="p-3">
                     <div className="flex gap-2">
                       <Button 
@@ -298,10 +261,12 @@ const Accounts = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       {/* User Details Popup */}
@@ -317,29 +282,35 @@ const Accounts = () => {
             <div className="flex items-center gap-3 border-b pb-3">
               <div className="w-12 h-12 bg-[#0088cc]/10 rounded-full flex items-center justify-center">
                 <span className="text-[#0088cc] font-bold text-lg">
-                  {hoveredUser.name.split(' ').map(n => n[0]).join('')}
+                  {(hoveredUser.name || hoveredUser.username || 'U').split(' ').map(n => n[0]).join('')}
                 </span>
               </div>
               <div>
-                <h4 className="font-bold text-gray-900">{hoveredUser.name}</h4>
-                <p className="text-sm text-gray-500">{hoveredUser.email}</p>
+                <h4 className="font-bold text-gray-900">{hoveredUser.name || hoveredUser.username || 'Unknown'}</h4>
+                <p className="text-sm text-gray-500">{hoveredUser.email || 'N/A'}</p>
               </div>
             </div>
-            
+
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Location:</span>
-                <span className="font-medium">{hoveredUser.location}</span>
-              </div>
+              {hoveredUser.location && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Location:</span>
+                  <span className="font-medium">{hoveredUser.location}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Joined:</span>
-                <span className="font-medium">{hoveredUser.joinDate}</span>
+                <span className="font-medium">
+                  {hoveredUser.joinDate || (hoveredUser.createdAt ? new Date(hoveredUser.createdAt).toLocaleDateString() : 'N/A')}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Last Active:</span>
-                <span className="font-medium">{hoveredUser.lastActive}</span>
-              </div>
-              {hoveredUser.premium && (
+              {hoveredUser.lastActive && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Last Active:</span>
+                  <span className="font-medium">{hoveredUser.lastActive}</span>
+                </div>
+              )}
+              {(hoveredUser.premium || hoveredUser.isPremium) && hoveredUser.premiumSince && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Premium Since:</span>
                   <span className="font-medium">{hoveredUser.premiumSince}</span>
@@ -347,27 +318,29 @@ const Accounts = () => {
               )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Violations:</span>
-                <span className={`font-medium ${hoveredUser.violations > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <span className={`font-medium ${(hoveredUser.violations || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
                   {hoveredUser.violations || 0}
                 </span>
               </div>
             </div>
-            
-            <div className="pt-2 border-t">
-              <p className="text-sm text-gray-600 italic">"{hoveredUser.bio}"</p>
-            </div>
-            
+
+            {hoveredUser.bio && (
+              <div className="pt-2 border-t">
+                <p className="text-sm text-gray-600 italic">"{hoveredUser.bio}"</p>
+              </div>
+            )}
+
             <div className="flex gap-2 pt-2">
-              <Badge className={getStatusColor(hoveredUser.status)}>
-                {hoveredUser.status}
+              <Badge className={getStatusColor(hoveredUser.status || 'Active')}>
+                {hoveredUser.status || 'Active'}
               </Badge>
-              {hoveredUser.premium && (
+              {(hoveredUser.premium || hoveredUser.isPremium) && (
                 <Badge className="bg-purple-100 text-purple-800">
                   <Crown className="w-3 h-3 mr-1" />
                   Premium
                 </Badge>
               )}
-              {hoveredUser.tripFluencer && (
+              {(hoveredUser.tripFluencer || hoveredUser.isTripFluencer) && (
                 <Badge className="bg-yellow-100 text-yellow-800">
                   <Star className="w-3 h-3 mr-1" />
                   Trip Fluencer
