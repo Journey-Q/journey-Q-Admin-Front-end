@@ -32,27 +32,27 @@ const TravelPayments = () => {
   const [filterStatus, setFilterStatus] = useState('all');
 
   const stats = [
-    {
-      title: 'Monthly Revenue',
-      value: 'Rs 4,250,000',
-      change: '+23% from last month',
-      icon: <DollarSign className="w-6 h-6" />,
-      color: 'bg-green-500'
-    },
-    {
-      title: 'Active Subscriptions',
-      value: '1,847',
-      change: '+156 this month',
-      icon: <Users className="w-6 h-6" />,
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'TripFluencer Discounts',
-      value: 'Rs 890,000',
-      change: '+45% savings given',
-      icon: <Percent className="w-6 h-6" />,
-      color: 'bg-yellow-500'
-    }
+    // {
+    //   title: 'Monthly Revenue',
+    //   value: 'Rs 4,250,000',
+    //   change: '+23% from last month',
+    //   icon: <DollarSign className="w-6 h-6" />,
+    //   color: 'bg-green-500'
+    // },
+    // {
+    //   title: 'Active Subscriptions',
+    //   value: '1,847',
+    //   change: '+156 this month',
+    //   icon: <Users className="w-6 h-6" />,
+    //   color: 'bg-blue-500'
+    // },
+    // {
+    //   title: 'TripFluencer Discounts',
+    //   value: 'Rs 890,000',
+    //   change: '+45% savings given',
+    //   icon: <Percent className="w-6 h-6" />,
+    //   color: 'bg-yellow-500'
+    // }
   ];
 
   const subscriptionPayments = [
@@ -341,7 +341,6 @@ const TravelPayments = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              TripFluencer Discounts
             </button>
           </nav>
         </div>
@@ -378,10 +377,10 @@ const TravelPayments = () => {
                   <h3 className="text-xl font-bold text-gray-900">Subscription Payments</h3>
                   <p className="text-gray-600">All monthly premium subscription transactions</p>
                 </div>
-                <Button className="bg-blue-500 hover:bg-blue-600">
+                {/* <Button className="bg-blue-500 hover:bg-blue-600">
                   <Download className="w-4 h-4 mr-2" />
                   Export Subscriptions
-                </Button>
+                </Button> */}
               </div>
 
               <div className="overflow-x-auto">

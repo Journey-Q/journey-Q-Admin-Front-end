@@ -325,7 +325,7 @@ const Profile: React.FC = () => {
         </Card>
 
         {/* Security Settings Card */}
-        <Card className="p-6 shadow-md border-0 bg-white">
+        {/* <Card className="p-6 shadow-md border-0 bg-white">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
               <Key className="w-5 h-5 text-red-500" />
@@ -348,7 +348,7 @@ const Profile: React.FC = () => {
 
            
           </div>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import {
   DollarSign,
   Calendar,
@@ -22,174 +22,12 @@ import {
   Globe,
   Eye,
   Percent,
-  AlertCircle,
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
-
-// API Configuration
-// const API_BASE_URL = 'http://localhost:8080';
-const API_BASE_URL = 'https://adminservice-production-19d3.up.railway.app';
-
-// Helper function to get auth token
-const getAuthToken = () => {
-  return (
-    localStorage.getItem("admin_token") ||
-    localStorage.getItem("adminToken") ||
-    localStorage.getItem("authToken") ||
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("authToken") ||
-    sessionStorage.getItem("token") ||
-    ""
-  );
-};
-
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const token = getAuthToken();
-  if (!token) {
-    console.warn('No auth token found! Please log in again.');
-  }
-  console.log('Using auth token:', token ? `${token.substring(0, 20)}...` : 'NONE');
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  };
-};
-
-// API Functions
-const commissionAPI = {
-  // Get all commission settings
-  getSettings: async () => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch settings' }));
-      throw new Error(error.message || 'Failed to fetch settings');
-    }
-    return response.json();
-  },
-
-  // Update commission settings (individual)
-  updateSingleSetting: async (providerType, commissionRate) => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings/${providerType}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ commissionRate }),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to update settings' }));
-      throw new Error(error.message || 'Failed to update settings');
-    }
-    const text = await response.text();
-    return text ? JSON.parse(text) : {};
-  },
-
-  // Update commission settings (bulk)
-  updateSettings: async (settings) => {
-    const settingsArray = Object.entries(settings).map(([type, rate]) => ({
-      providerType: mapProviderTypeToBackend(type),
-      commissionRate: Number(rate),
-    }));
-
-    console.log('Original settings:', settings);
-    console.log('Sending bulk update:', settingsArray);
-    console.log('Stringified payload:', JSON.stringify(settingsArray, null, 2));
-    console.log('Request URL:', `${API_BASE_URL}/admin/auth/commissions/settings/bulk`);
-    console.log('Headers:', getAuthHeaders());
-
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings/bulk`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(settingsArray),
-    });
-
-    console.log('Response status:', response.status, response.statusText);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('Error response body:', text);
-      let error;
-      try {
-        error = JSON.parse(text);
-        console.error('Parsed error:', error);
-      } catch (e) {
-        console.error('Could not parse error as JSON:', e);
-        error = { message: text || `Failed to update settings (${response.status} ${response.statusText})` };
-      }
-      throw new Error(error.message || error.error || `Failed to update settings (${response.status})`);
-    }
-
-    const text = await response.text();
-    console.log('Success response body:', text);
-    return text ? JSON.parse(text) : {};
-  },
-
-  // Get all commissions
-  getAllCommissions: async () => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch commissions' }));
-      throw new Error(error.message || 'Failed to fetch commissions');
-    }
-    return response.json();
-  },
-
-  // Get commission statistics
-  getStatistics: async () => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/statistics`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch statistics' }));
-      throw new Error(error.message || 'Failed to fetch statistics');
-    }
-    return response.json();
-  },
-
-  // Initialize default settings
-  initializeSettings: async () => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings/initialize`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to initialize settings' }));
-      throw new Error(error.message || 'Failed to initialize settings');
-    }
-    return response.json();
-  },
-};
-
-// Helper functions to map provider types
-const mapProviderTypeToBackend = (type) => {
-  const mapping = {
-    'Hotel': 'HOTEL',
-    'Travel Service': 'TRAVEL_SERVICE',
-    'Tour Service': 'TOUR_SERVICE',
-  };
-  return mapping[type] || type;
-};
-
-const mapProviderTypeFromBackend = (type) => {
-  const mapping = {
-    'HOTEL': 'Hotel',
-    'TRAVEL_SERVICE': 'Travel Service',
-    'TOUR_SERVICE': 'Tour Service',
-  };
-  return mapping[type] || type;
-};
 
 interface CommissionData {
   id: string
@@ -223,9 +61,6 @@ const Commissions: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState("all")
   const [selectedProvider, setSelectedProvider] = useState<CommissionData | null>(null)
   const [expandedProviders, setExpandedProviders] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   // Commission settings state
   const [commissionSettings, setCommissionSettings] = useState<CommissionSettings>({
@@ -235,113 +70,119 @@ const Commissions: React.FC = () => {
   })
   const [tempSettings, setTempSettings] = useState<CommissionSettings>(commissionSettings)
 
-  // Commission data state
-  const [commissions, setCommissions] = useState<CommissionData[]>([])
-  const [stats, setStats] = useState({
-    totalCommissions: 0,
-    totalRevenue: 0,
-  })
+  // Mock data with comprehensive information
+  const commissions: CommissionData[] = [
+    {
+      id: "1",
+      serviceProvider: "Sunset Beach Resort",
+      providerType: "Hotel",
+      amount: 1250.0,
+      percentage: 12.5,
+      date: "2024-01-15",
+      transactionId: "TXN001",
+      revenue: 10000.0,
+      businessRegNo: "FL-HTL-2024-001",
+      paymentMethod: "Bank Transfer",
+      customerCount: 45,
+      month: "2024-01",
+      location: "Bali, Indonesia",
+      phone: "+62 361 123 4567",
+      website: "www.sunsetbeach.com",
+      address: "Jl. Pantai Kuta No. 123, Kuta, Badung Regency, Bali 80361, Indonesia",
+    },
+    {
+      id: "2",
+      serviceProvider: "Mountain Adventure Tours",
+      providerType: "Tour Service",
+      amount: 850.0,
+      percentage: 15.0,
+      date: "2024-01-14",
+      transactionId: "TXN002",
+      revenue: 5666.67,
+      businessRegNo: "CO-TOR-2024-045",
+      paymentMethod: "PayPal",
+      customerCount: 28,
+      month: "2024-01",
+      location: "Nepal",
+      phone: "+977 1 234 5678",
+      website: "www.adventurepro.com",
+      address: "Thamel Marg, Ward No. 26, Kathmandu 44600, Nepal",
+    },
+    {
+      id: "3",
+      serviceProvider: "City Car Rentals",
+      providerType: "Travel Service",
+      amount: 1000.0,
+      percentage: 10.0,
+      date: "2024-01-13",
+      transactionId: "TXN003",
+      revenue: 10000.0,
+      businessRegNo: "NY-TRV-2024-089",
+      paymentMethod: "Direct Deposit",
+      customerCount: 156,
+      month: "2024-01",
+      location: "Bangkok, Thailand",
+      phone: "+66 2 123 4567",
+      website: "www.citytransport.com",
+      address: "456 Sukhumvit Road, Klongtoey, Bangkok 10110, Thailand",
+    },
+    {
+      id: "4",
+      serviceProvider: "Downtown Luxury Hotel",
+      providerType: "Hotel",
+      amount: 3200.0,
+      percentage: 12.5,
+      date: "2024-02-09",
+      transactionId: "TXN007",
+      revenue: 25600.0,
+      businessRegNo: "IL-HTL-2024-034",
+      paymentMethod: "Bank Transfer",
+      customerCount: 89,
+      month: "2024-02",
+      location: "Maldives",
+      phone: "+960 123 4567",
+      website: "www.luxurychain.com",
+      address: "Malé 20026, Republic of Maldives",
+    },
+    {
+      id: "5",
+      serviceProvider: "Golden Gate Tours",
+      providerType: "Tour Service",
+      amount: 1480.0,
+      percentage: 15.0,
+      date: "2024-02-08",
+      transactionId: "TXN008",
+      revenue: 9866.67,
+      businessRegNo: "CA-TOR-2024-078",
+      paymentMethod: "PayPal",
+      customerCount: 67,
+      month: "2024-02",
+      location: "Peru",
+      phone: "+51 1 234 5678",
+      website: "www.heritage.com",
+      address: "Av. El Sol 123, Cusco 08002, Peru",
+    },
+    {
+      id: "6",
+      serviceProvider: "Express Travel Services",
+      providerType: "Travel Service",
+      amount: 750.0,
+      percentage: 10.0,
+      date: "2024-02-07",
+      transactionId: "TXN009",
+      revenue: 7500.0,
+      businessRegNo: "TX-TRV-2024-156",
+      paymentMethod: "Bank Transfer",
+      customerCount: 34,
+      month: "2024-02",
+      location: "Switzerland",
+      phone: "+41 27 123 4567",
+      website: "www.mountainview.com",
+      address: "Bergstrasse 45, 3920 Zermatt, Switzerland",
+    },
+  ]
 
-  // Load data on component mount
-  useEffect(() => {
-    loadInitialData()
-  }, [])
-
-  const loadInitialData = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      // Load commission settings
-      await loadCommissionSettings()
-
-      // Load commissions data
-      await loadCommissions()
-
-      // Load statistics
-      await loadStatistics()
-    } catch (err) {
-      setError(err.message || 'Failed to load data')
-      console.error('Error loading initial data:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadCommissionSettings = async () => {
-    try {
-      const response = await commissionAPI.getSettings()
-      if (response.settings) {
-        const mappedSettings = {
-          Hotel: parseFloat(response.settings.HOTEL || 12.5),
-          "Travel Service": parseFloat(response.settings.TRAVEL_SERVICE || 10.0),
-          "Tour Service": parseFloat(response.settings.TOUR_SERVICE || 15.0),
-        }
-        setCommissionSettings(mappedSettings)
-        setTempSettings(mappedSettings)
-      }
-    } catch (err) {
-      console.error('Error loading commission settings:', err)
-      console.warn('Using default settings - backend database not configured')
-      // Use default settings if backend is not ready
-      const defaultSettings = {
-        Hotel: 12.5,
-        "Travel Service": 10.0,
-        "Tour Service": 15.0,
-      }
-      setCommissionSettings(defaultSettings)
-      setTempSettings(defaultSettings)
-    }
-  }
-
-  const loadCommissions = async () => {
-    try {
-      const response = await commissionAPI.getAllCommissions()
-      if (response.commissions) {
-        // Map backend data to frontend format
-        const mappedCommissions = response.commissions.map((c: any) => ({
-          id: c.id.toString(),
-          serviceProvider: c.serviceProvider,
-          providerType: mapProviderTypeFromBackend(c.providerType),
-          amount: parseFloat(c.amount),
-          percentage: parseFloat(c.percentage),
-          date: c.date,
-          transactionId: c.transactionId,
-          revenue: parseFloat(c.revenue),
-          businessRegNo: c.businessRegNo || '',
-          paymentMethod: c.paymentMethod || '',
-          customerCount: c.customerCount || 0,
-          month: c.month || '',
-          location: c.location || '',
-          phone: c.phone || '',
-          website: c.website || '',
-          address: c.address || '',
-        }))
-        setCommissions(mappedCommissions)
-      }
-    } catch (err) {
-      console.error('Error loading commissions:', err)
-      // Use empty array if no commissions exist yet
-      setCommissions([])
-    }
-  }
-
-  const loadStatistics = async () => {
-    try {
-      const response = await commissionAPI.getStatistics()
-      setStats({
-        totalCommissions: parseFloat(response.totalCommissions || 0),
-        totalRevenue: parseFloat(response.totalRevenue || 0),
-      })
-    } catch (err) {
-      console.error('Error loading statistics:', err)
-      // Calculate from loaded commissions if API fails
-      const totalCommissions = commissions.reduce((sum, c) => sum + c.amount, 0)
-      const totalRevenue = commissions.reduce((sum, c) => sum + c.revenue, 0)
-      setStats({ totalCommissions, totalRevenue })
-    }
-  }
-
-  const months = [...new Set(commissions.map(c => c.month).filter(Boolean))]
+  const months = ["2024-01", "2024-02", "2024-03"]
   const uniqueProviders = [...new Set(commissions.map((c) => c.serviceProvider))]
 
   const handleSettingsChange = (type: keyof CommissionSettings, value: number) => {
@@ -351,72 +192,9 @@ const Commissions: React.FC = () => {
     }))
   }
 
-  const saveSettings = async () => {
-    setLoading(true)
-    setError(null)
-    setSuccessMessage(null)
-
-    // Prevent infinite recursion
-    const maxRetries = 1
-    let retryCount = 0
-
-    const attemptSave = async () => {
-      try {
-        console.log('=== Starting commission settings update ===')
-        console.log('Saving settings:', tempSettings)
-
-        // First, try to initialize settings if they don't exist
-        console.log('Ensuring settings are initialized...')
-        try {
-          await commissionAPI.initializeSettings()
-          console.log('Settings initialized successfully')
-        } catch (initErr) {
-          console.log('Initialize returned error (might already exist):', initErr.message)
-          // It's okay if this fails - settings might already exist
-        }
-
-        // Now try individual updates
-        const updatePromises = Object.entries(tempSettings).map(([type, rate]) => {
-          const backendType = mapProviderTypeToBackend(type)
-          console.log(`Updating ${type} (${backendType}) to ${rate}%`)
-          return commissionAPI.updateSingleSetting(backendType, Number(rate))
-        })
-
-        const results = await Promise.all(updatePromises)
-        console.log('Update results:', results)
-
-        setCommissionSettings(tempSettings)
-        setSuccessMessage('Commission settings updated successfully!')
-        // Reload settings to ensure we have the latest data
-        await loadCommissionSettings()
-        console.log('=== Commission settings update completed ===')
-        setTimeout(() => setSuccessMessage(null), 3000)
-      } catch (err) {
-        const errorMessage = err.message || 'Failed to save settings'
-        console.error('=== Error saving settings ===')
-        console.error('Error object:', err)
-        console.error('Error message:', errorMessage)
-        console.error('Error stack:', err.stack)
-
-        // If it's a server error and we haven't retried yet, try initializing first
-        if ((errorMessage.includes('500') || errorMessage.includes('Internal Server Error')) && retryCount < maxRetries) {
-          console.log('Server error detected, will initialize and retry...')
-          retryCount++
-          await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second
-          return attemptSave()
-        }
-
-        setError(`Database Error: The commission settings table doesn't exist in the backend database. Please contact your backend developer to run database migrations or create the commission_settings table.`)
-        // Reset temp settings to current settings on error
-        setTempSettings(commissionSettings)
-      }
-    }
-
-    try {
-      await attemptSave()
-    } finally {
-      setLoading(false)
-    }
+  const saveSettings = () => {
+    setCommissionSettings(tempSettings)
+    console.log("Saving commission settings:", tempSettings)
   }
 
   const resetSettings = () => {
@@ -433,6 +211,12 @@ const Commissions: React.FC = () => {
 
   const handleCloseModal = () => {
     setSelectedProvider(null)
+  }
+
+  // Calculate stats
+  const stats = {
+    totalCommissions: commissions.reduce((sum, commission) => sum + commission.amount, 0),
+    totalRevenue: commissions.reduce((sum, commission) => sum + commission.revenue, 0),
   }
 
   const getFilteredCommissions = () => {
@@ -492,18 +276,6 @@ const Commissions: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
-      {/* Error and Success Messages */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-      {successMessage && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-          {successMessage}
-        </div>
-      )}
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6 bg-white shadow-lg border-0">
@@ -573,6 +345,7 @@ const Commissions: React.FC = () => {
             </div>
           </div>
         </Card>
+        
       </div>
 
       {/* Tabs */}
@@ -674,82 +447,76 @@ const Commissions: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Commission Transactions</h3>
               <p className="text-gray-600">Track all commission payments from service providers</p>
             </div>
-            {loading ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Loading commissions...</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium text-gray-900">Provider</th>
-                      <th className="text-left p-3 font-medium text-gray-900">Type</th>
-                      <th className="text-left p-3 font-medium text-gray-900">Commission</th>
-                      <th className="text-left p-3 font-medium text-gray-900">Revenue</th>
-                      <th className="text-left p-3 font-medium text-gray-900">Commission Rate</th>
-                      <th className="text-left p-3 font-medium text-gray-900">Date</th>
-                      <th className="text-left p-3 font-medium text-gray-900">Transaction ID</th>
-                      <th className="text-left p-3 font-medium text-gray-900">Actions</th>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-3 font-medium text-gray-900">Provider</th>
+                    <th className="text-left p-3 font-medium text-gray-900">Type</th>
+                    <th className="text-left p-3 font-medium text-gray-900">Commission</th>
+                    <th className="text-left p-3 font-medium text-gray-900">Revenue</th>
+                    <th className="text-left p-3 font-medium text-gray-900">Commission Rate</th>
+                    <th className="text-left p-3 font-medium text-gray-900">Date</th>
+                    <th className="text-left p-3 font-medium text-gray-900">Transaction ID</th>
+                    <th className="text-left p-3 font-medium text-gray-900">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCommissions.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="p-8 text-center text-gray-500">
+                        No commission records found
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCommissions.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="p-8 text-center text-gray-500">
-                          No commission records found
+                  ) : (
+                    filteredCommissions.map((commission) => (
+                      <tr key={commission.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3">
+                          <div>
+                            <p className="font-medium">{commission.serviceProvider}</p>
+                            <p className="text-sm text-gray-500">{commission.location}</p>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge className={getTypeBadgeClass(commission.providerType)}>
+                            {getTypeIcon(commission.providerType)}
+                            <span className="ml-1">{commission.providerType}</span>
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <span className="font-semibold text-green-600">Rs {commission.amount.toLocaleString()}</span>
+                        </td>
+                        <td className="p-3">
+                          <span className="font-medium">Rs {commission.revenue.toLocaleString()}</span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`px-3 py-1 rounded-full text-sm font-bold ${getPercentageColor(commission.percentage)}`}
+                            >
+                              {commission.percentage}%
+                            </div>
+                            <div className="w-16">
+                              <Progress value={(commission.percentage / 20) * 100} className="h-2" />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3 text-gray-600">{new Date(commission.date).toLocaleDateString()}</td>
+                        <td className="p-3">
+                          <span className="font-mono text-sm text-gray-700">{commission.transactionId}</span>
+                        </td>
+                        <td className="p-3">
+                          <Button size="sm" variant="outline" onClick={() => handleViewProvider(commission)}>
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </Button>
                         </td>
                       </tr>
-                    ) : (
-                      filteredCommissions.map((commission) => (
-                        <tr key={commission.id} className="border-b hover:bg-gray-50">
-                          <td className="p-3">
-                            <div>
-                              <p className="font-medium">{commission.serviceProvider}</p>
-                              <p className="text-sm text-gray-500">{commission.location}</p>
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <Badge className={getTypeBadgeClass(commission.providerType)}>
-                              {getTypeIcon(commission.providerType)}
-                              <span className="ml-1">{commission.providerType}</span>
-                            </Badge>
-                          </td>
-                          <td className="p-3">
-                            <span className="font-semibold text-green-600">Rs {commission.amount.toLocaleString()}</span>
-                          </td>
-                          <td className="p-3">
-                            <span className="font-medium">Rs {commission.revenue.toLocaleString()}</span>
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`px-3 py-1 rounded-full text-sm font-bold ${getPercentageColor(commission.percentage)}`}
-                              >
-                                {commission.percentage}%
-                              </div>
-                              <div className="w-16">
-                                <Progress value={(commission.percentage / 20) * 100} className="h-2" />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-3 text-gray-600">{new Date(commission.date).toLocaleDateString()}</td>
-                          <td className="p-3">
-                            <span className="font-mono text-sm text-gray-700">{commission.transactionId}</span>
-                          </td>
-                          <td className="p-3">
-                            <Button size="sm" variant="outline" onClick={() => handleViewProvider(commission)}>
-                              <Eye className="w-4 h-4 mr-1" />
-                              View
-                            </Button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </Card>
         </>
       )}
@@ -760,25 +527,6 @@ const Commissions: React.FC = () => {
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Commission Rate Settings</h3>
             <p className="text-gray-600">Configure commission percentages for different service provider types</p>
-          </div>
-
-          {/* Backend Setup Warning */}
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-              <div>
-                <h4 className="font-semibold text-yellow-900 mb-1">Backend Database Setup Required</h4>
-                <p className="text-sm text-yellow-800 mb-2">
-                  The commission settings feature requires the backend database to have the <code className="bg-yellow-100 px-1 rounded">commission_settings</code> table.
-                  If you get errors when saving, please ensure your backend developer has:
-                </p>
-                <ul className="text-sm text-yellow-800 list-disc list-inside space-y-1 ml-2">
-                  <li>Created the CommissionSettings entity/table in the database</li>
-                  <li>Run database migrations</li>
-                  <li>Configured the relationship between Commission and CommissionSettings entities</li>
-                </ul>
-              </div>
-            </div>
           </div>
           <div className="space-y-6">
             {Object.entries(tempSettings).map(([type, rate]) => (
@@ -800,7 +548,6 @@ const Commissions: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleSettingsChange(type as keyof CommissionSettings, Math.max(0, rate - 0.5))}
-                    disabled={loading}
                   >
                     <Minus className="w-4 h-4" />
                   </Button>
@@ -815,44 +562,20 @@ const Commissions: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleSettingsChange(type as keyof CommissionSettings, Math.min(25, rate + 0.5))}
-                    disabled={loading}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
             ))}
-            <div className="flex justify-between items-center pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  setLoading(true)
-                  try {
-                    await commissionAPI.initializeSettings()
-                    await loadCommissionSettings()
-                    setSuccessMessage('Settings initialized successfully!')
-                    setTimeout(() => setSuccessMessage(null), 3000)
-                  } catch (err) {
-                    setError(`Failed to initialize: ${err.message}`)
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-                disabled={loading}
-                className="text-blue-600 border-blue-600 hover:bg-blue-50"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Initialize Settings
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <Button variant="outline" onClick={resetSettings}>
+                Reset Changes
               </Button>
-              <div className="flex space-x-3">
-                <Button variant="outline" onClick={resetSettings} disabled={loading}>
-                  Reset Changes
-                </Button>
-                <Button onClick={saveSettings} className="bg-[#0088cc] hover:bg-[#0088cc]/90" disabled={loading}>
-                  <Save className="w-4 h-4 mr-2" />
-                  {loading ? 'Saving...' : 'Save Settings'}
-                </Button>
-              </div>
+              <Button onClick={saveSettings} className="bg-[#0088cc] hover:bg-[#0088cc]/90">
+                <Save className="w-4 h-4 mr-2" />
+                Save Settings
+              </Button>
             </div>
           </div>
         </Card>
