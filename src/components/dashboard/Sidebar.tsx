@@ -67,12 +67,12 @@ const menuItems = [
   //   path: "/rewards",
   //   description: "",
   // },
-  {
-    icon: CreditCard,
-    label: "Payment Monitor",
-    path: "/payments",
-    description: "",
-  },
+  // {
+  //   icon: CreditCard,
+  //   label: "Payment Monitor",
+  //   path: "/payments",
+  //   description: "",
+  // },
   {
     icon: DollarSign,
     label: "Commissions",

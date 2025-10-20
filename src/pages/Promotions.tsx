@@ -355,34 +355,17 @@ const AdminPromotions = () => {
     },
   }
 
-  // Filter and sort logic
+  // Filter logic
   const filteredPromotions = promotions.filter((promotion) => {
     // Search filter
     const matchesSearch = searchTerm === "" ||
       promotion.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       promotion.description?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    // Service type filter
-    const matchesServiceType = filterServiceType === "all" ||
-      promotion.serviceProviderType === filterServiceType
-
-    return matchesSearch && matchesServiceType
+    return matchesSearch
   })
 
-  const sortedPromotions = [...filteredPromotions].sort((a, b) => {
-    switch (sortBy) {
-      case "newest":
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-      case "oldest":
-        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
-      case "discount":
-        return (b.discount || 0) - (a.discount || 0)
-      case "payment":
-        return (b.paymentAmount || 0) - (a.paymentAmount || 0)
-      default:
-        return 0
-    }
-  })
+  const sortedPromotions = filteredPromotions
 
   // Statistics
   const stats = {
@@ -469,7 +452,7 @@ const AdminPromotions = () => {
       </Card>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-[#0088cc]/10 rounded-xl flex items-center justify-center">
@@ -517,125 +500,45 @@ const AdminPromotions = () => {
             </div>
           </div>
         </Card>
-
-        <Card className="p-6 bg-white shadow-lg border-0">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
-              <p className="text-sm text-gray-600">Total Revenue</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-white shadow-lg border-0">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-orange-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.paidPromotions}</p>
-              <p className="text-sm text-gray-600">Paid Promotions</p>
-            </div>
-          </div>
-        </Card>
       </div>
 
       {/* Tabs */}
       <Card className="bg-white shadow-lg border-0">
         <div className="flex border-b overflow-x-auto">
           {[
-            { id: "pending", label: "Pending Review", count: stats.pending, color: "text-yellow-600" },
-            { id: "approved", label: "Approved", count: stats.approved, color: "text-blue-600" },
-            { id: "advertised", label: "Advertised", count: stats.advertised, color: "text-green-600" },
-            { id: "rejected", label: "Rejected", count: stats.rejected, color: "text-red-600" },
-            { id: "all", label: "All Promotions", count: stats.total, color: "text-gray-600" },
+            { id: "pending", label: "Pending Review", color: "text-yellow-600" },
+            { id: "approved", label: "Approved", color: "text-blue-600" },
+            { id: "advertised", label: "Advertised", color: "text-green-600" },
+            { id: "rejected", label: "Rejected", color: "text-red-600" },
+            { id: "all", label: "All Promotions", color: "text-gray-600" },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors whitespace-nowrap ${
+              className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? "text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5"
                   : "text-gray-600 hover:text-gray-800"
               }`}
             >
-              <span>{tab.label}</span>
-              <Badge
-                className={`ml-2 ${activeTab === tab.id ? "bg-[#0088cc] text-white" : "bg-gray-200 text-gray-600"}`}
-              >
-                {tab.count}
-              </Badge>
+              {tab.label}
             </button>
           ))}
         </div>
       </Card>
 
-      {/* Filters */}
+      {/* Search */}
       <Card className="p-4 bg-white shadow-lg border-0">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Search promotions, providers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full sm:w-80 focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
-              />
-            </div>
-
-            <select
-              value={filterServiceType}
-              onChange={(e) => setFilterServiceType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
-            >
-              <option value="all">All Service Types</option>
-              {Object.entries(serviceConfigs).map(([key, config]) => (
-                <option key={key} value={key}>
-                  {config.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="discount">Highest Discount</option>
-              <option value="payment">Highest Payment</option>
-            </select>
-          </div>
-
-          {selectedPromotions.length > 0 && (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">{selectedPromotions.length} selected</span>
-              <Button variant="outline" onClick={() => setShowBulkActions(!showBulkActions)}>
-                Bulk Actions
-              </Button>
-            </div>
-          )}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Search promotions, providers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-full focus:ring-2 focus:ring-[#0088cc] focus:border-transparent"
+          />
         </div>
-
-        {showBulkActions && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg flex space-x-2">
-            <Button onClick={handleBulkApprove} className="bg-[#0088cc] hover:bg-blue-700 text-white">
-              Approve All
-            </Button>
-            <Button onClick={handleBulkReject} className="bg-red-500 hover:bg-red-600 text-white">
-              Reject All
-            </Button>
-            <Button onClick={handleBulkDelete} className="bg-gray-500 hover:bg-gray-600 text-white">
-              Delete All
-            </Button>
-          </div>
-        )}
       </Card>
 
       {/* Loading State */}
@@ -752,8 +655,6 @@ const AdminPromotions = () => {
                     <span className="font-medium">{promotion.serviceProviderName || `Provider #${promotion.serviceProviderId}`}</span>
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-gray-500">
-                    <Calendar className="w-4 h-4" />
-                    <span>Submitted: {formatDate(promotion.createdAt)}</span>
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-gray-500">
                     <Clock className="w-4 h-4" />
@@ -1106,40 +1007,6 @@ const AdminPromotions = () => {
         </div>
       )}
 
-      {/* Performance Summary */}
-      <Card className="p-6 bg-white shadow-lg border-0">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Platform Summary</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="w-12 h-12 bg-[#0088cc]/10 rounded-xl mx-auto mb-2 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-[#0088cc]" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            <p className="text-sm text-gray-600">Total Submissions</p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-green-500/10 rounded-xl mx-auto mb-2 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-green-500" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalRevenue)}</p>
-            <p className="text-sm text-gray-600">Total Revenue</p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-yellow-500/10 rounded-xl mx-auto mb-2 flex items-center justify-center">
-              <Users className="w-6 h-6 text-yellow-500" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{Object.keys(serviceConfigs).length}</p>
-            <p className="text-sm text-gray-600">Service Types</p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-purple-500/10 rounded-xl mx-auto mb-2 flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-purple-500" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{stats.paidPromotions}</p>
-            <p className="text-sm text-gray-600">Paid Promotions</p>
-          </div>
-        </div>
-      </Card>
     </div>
   )
 }

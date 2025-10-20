@@ -18,12 +18,12 @@ const Accounts = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://socialmediaservice-production-2b10.up.railway.app/auth/all');
+        const response = await fetch('https://socialmediaservice-production-2b10.up.railway.app/follow/users-profiles');
         if (!response.ok) {
           throw new Error('Failed to fetch users');
         }
-        const data = await response.json();
-        setUsers(data);
+        const result = await response.json();
+        setUsers(result.data.users || []);
         setError(null);
       } catch (err) {
         setError(err.message);
@@ -45,25 +45,25 @@ const Accounts = () => {
       color: 'bg-blue-500'
     },
     {
-      title: 'Active Accounts',
-      value: users.filter(u => u.status?.toLowerCase() === 'active' || !u.status).length.toLocaleString(),
+      title: 'Premium Users',
+      value: users.filter(u => u.isPremium === true).length.toLocaleString(),
       change: '',
-      icon: <UserCheck className="w-6 h-6" />,
-      color: 'bg-green-500'
+      icon: <Crown className="w-6 h-6" />,
+      color: 'bg-purple-500'
     },
     {
-      title: 'Suspended',
-      value: users.filter(u => u.status?.toLowerCase() === 'suspended').length.toLocaleString(),
+      title: 'TripFluence',
+      value: users.filter(u => u.isTripFluence === true).length.toLocaleString(),
       change: '',
-      icon: <UserX className="w-6 h-6" />,
-      color: 'bg-red-500'
-    },
-    {
-      title: 'Policy Violations',
-      value: users.filter(u => u.violations && u.violations > 0).length.toLocaleString(),
-      change: '',
-      icon: <AlertTriangle className="w-6 h-6" />,
+      icon: <Star className="w-6 h-6" />,
       color: 'bg-yellow-500'
+    },
+    {
+      title: 'Setup Completed',
+      value: users.filter(u => u.setupCompleted === true).length.toLocaleString(),
+      change: '',
+      icon: <CheckCircle className="w-6 h-6" />,
+      color: 'bg-green-500'
     }
   ];
 
@@ -77,10 +77,19 @@ const Accounts = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = (user.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                         (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                         (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || (user.status?.toLowerCase() || 'active') === filterStatus.toLowerCase();
+    const matchesSearch = (user.displayName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (user.userId?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (user.bio?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+
+    let matchesFilter = true;
+    if (filterStatus === 'premium') {
+      matchesFilter = user.isPremium === true;
+    } else if (filterStatus === 'tripfluence') {
+      matchesFilter = user.isTripFluence === true;
+    } else if (filterStatus === 'setup') {
+      matchesFilter = user.setupCompleted === true;
+    }
+
     return matchesSearch && matchesFilter;
   });
 
@@ -156,10 +165,10 @@ const Accounts = () => {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
-              <option value="under review">Under Review</option>
+              <option value="all">All Users</option>
+              <option value="premium">Premium Users</option>
+              <option value="tripfluence">TripFluence</option>
+              <option value="setup">Setup Completed</option>
             </select>
           </div>
         </div>
@@ -202,26 +211,46 @@ const Accounts = () => {
                   </tr>
                 ) : (
                   filteredUsers.map((user) => (
-                  <tr key={user._id || user.id} className="border-b hover:bg-gray-50">
+                  <tr key={user.userId} className="border-b hover:bg-gray-50">
                     <td className="p-3">
-                      <div>
-                        <p className="font-medium">{user.name || user.username || 'N/A'}</p>
-                        <p className="text-sm text-gray-500">{user.email || 'N/A'}</p>
-                        <p className="text-xs text-gray-400">
-                          Joined: {user.joinDate || user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        {user.profileImageUrl && (
+                          <img
+                            src={user.profileImageUrl}
+                            alt={user.displayName}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        )}
+                        <div>
+                          <p className="font-medium">{user.displayName || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">ID: {user.userId}</p>
+                          <p className="text-xs text-gray-400">
+                            Joined: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
                       </div>
                     </td>
                     <td className="p-3">
-                      <Badge className={getStatusColor(user.status || 'Active')}>
-                        {user.status || 'Active'}
+                      <Badge className={user.setupCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                        {user.setupCompleted ? 'Active' : 'Incomplete'}
                       </Badge>
                     </td>
-                    <td className="p-3">{user.followers || user.followersCount || '0'}</td>
-                    <td className="p-3">{user.posts || user.postsCount || '0'}</td>
                     <td className="p-3">
-                      {user.tripFluencer || user.isTripFluencer ? (
+                      <div>
+                        <p className="font-medium">{user.followersCount || '0'}</p>
+                        <p className="text-xs text-gray-500">{user.followingCount || '0'} following</p>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div>
+                        <p className="font-medium">{user.postsCount || '0'}</p>
+                        <p className="text-xs text-gray-500">{user.likesCount || '0'} likes</p>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      {user.isTripFluence ? (
                         <Badge className="bg-yellow-100 text-yellow-800">
+                          <Star className="w-3 h-3 mr-1" />
                           Yes
                         </Badge>
                       ) : (
@@ -229,7 +258,7 @@ const Accounts = () => {
                       )}
                     </td>
                     <td className="p-3">
-                      {user.premium || user.isPremium ? (
+                      {user.isPremium ? (
                         <Badge className="bg-purple-100 text-purple-800">
                           <Crown className="w-3 h-3 mr-1" />
                           Premium

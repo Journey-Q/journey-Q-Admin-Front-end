@@ -3,7 +3,7 @@ import { StatsWidget } from '@/components/dashboard/StatsWidget';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Building2, Shield, CreditCard, AlertTriangle, TrendingUp, Star, CheckCircle, Flag, LogOut, RefreshCw } from 'lucide-react';
+import { Users, Building2, Shield, CheckCircle, LogOut, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { adminAPI, auth } from '@/lib/utils';
@@ -21,6 +21,8 @@ const Dashboard = () => {
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
   const [apiTesting, setApiTesting] = useState(false);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalProviders, setTotalProviders] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,12 +33,14 @@ const Dashboard = () => {
     }
 
     loadAdminProfile();
+    loadUsersCount();
+    loadProvidersCount();
   }, [navigate]);
 
   const loadAdminProfile = async () => {
     try {
       setLoading(true);
-      
+
       // First try to get data from localStorage
       const localAdminData = auth.getAdminData();
       if (localAdminData) {
@@ -46,17 +50,41 @@ const Dashboard = () => {
       // Then fetch fresh data from API
       const profileData = await adminAPI.getProfile();
       setAdminData(profileData);
-      
+
     } catch (error) {
       // console.error('Failed to load profile:', error);
       // toast.error('Failed to load profile data');
-      
+
       // If API call fails due to unauthorized, logout and redirect
       if (error instanceof Error && (error.message.includes('Unauthorized') || error.message.includes('token'))) {
         handleLogout();
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUsersCount = async () => {
+    try {
+      const response = await fetch('https://socialmediaservice-production-2b10.up.railway.app/auth/all');
+      if (response.ok) {
+        const users = await response.json();
+        setTotalUsers(users.length);
+      }
+    } catch (error) {
+      console.error('Failed to load users count:', error);
+    }
+  };
+
+  const loadProvidersCount = async () => {
+    try {
+      const response = await fetch('https://serviceprovidersservice-production-8f10.up.railway.app/service/providers/all');
+      if (response.ok) {
+        const data = await response.json();
+        setTotalProviders(data.totalProviders || 0);
+      }
+    } catch (error) {
+      console.error('Failed to load providers count:', error);
     }
   };
 
@@ -95,177 +123,41 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Total Users',
-      value: '24,847',
+      value: totalUsers.toLocaleString(),
       change: '',
       changeType: 'positive' as const,
       icon: <Users className="w-6 h-6" />,
-      description: ''
+      description: 'Registered users'
     },
     {
       title: 'Service Providers',
-      value: '2,156',
+      value: totalProviders.toLocaleString(),
       change: '',
       changeType: 'positive' as const,
       icon: <Building2 className="w-6 h-6" />,
-      description: ''
-    },
-    {
-      title: 'Monthly Revenue',
-      value: 'Rs186,420',
-      change: '',
-      changeType: 'positive' as const,
-      icon: <CreditCard className="w-6 h-6" />,
-      description: ''
+      description: 'Active service providers'
     },
   ];
 
+  // Real data from the image showing travel agent approvals
   const recentApprovals = [
     { 
-      name: 'Sunset Beach Resort',
-      type: 'Hotel',
-      address: '1234 Ocean Drive, Miami Beach, FL 33139',
-      businessRegNo: 'FL-HTL-2024-001',
-      submittedDate: '2 days ago',
+      name: 'wanderlust_travels',
+      email: 'info@wanderlusttravels.com',
+      type: 'Travel Agent',
+      businessRegNo: 'TA12345',
+      phone: '0112345678',
+      submittedDate: 'Oct 19, 2025',
       status: 'pending'
     },
     { 
-      name: 'Mountain Adventure Tours',
-      type: 'Tour Operator',
-      address: '567 Alpine Way, Denver, CO 80202',
-      businessRegNo: 'CO-TOR-2024-045',
-      submittedDate: '3 days ago',
-      status: 'approved'
-    },
-    { 
-      name: 'Urban Eats Restaurant',
-      type: 'Restaurant',
-      address: '890 Broadway Ave, New York, NY 10003',
-      businessRegNo: 'NY-RST-2024-089',
-      submittedDate: '4 days ago',
+      name: 'paradise_tours',
+      email: 'contact@paradisetours.lk',
+      type: 'Travel Agent',
+      businessRegNo: 'TA67890',
+      phone: '0773456789',
+      submittedDate: 'Oct 19, 2025',
       status: 'pending'
-    },
-    { 
-      name: 'Coastal Car Rentals',
-      type: 'Transport',
-      address: '321 Harbor Blvd, San Diego, CA 92101',
-      businessRegNo: 'CA-TRP-2024-156',
-      submittedDate: '5 days ago',
-      status: 'under_review'
-    },
-    { 
-      name: 'Heritage Walking Tours',
-      type: 'Tour Guide',
-      address: '456 Freedom Trail, Boston, MA 02108',
-      businessRegNo: 'MA-GID-2024-023',
-      submittedDate: '1 week ago',
-      status: 'approved'
-    },
-    { 
-      name: 'Paradise Spa & Wellness',
-      type: 'Spa',
-      address: '789 Serenity Lane, Sedona, AZ 86336',
-      businessRegNo: 'AZ-SPA-2024-067',
-      submittedDate: '1 week ago',
-      status: 'pending'
-    },
-    { 
-      name: 'Downtown Luxury Hotel',
-      type: 'Hotel',
-      address: '123 Metropolitan St, Chicago, IL 60601',
-      businessRegNo: 'IL-HTL-2024-034',
-      submittedDate: '2 weeks ago',
-      status: 'under_review'
-    },
-    { 
-      name: 'Golden Gate Tours',
-      type: 'Tour Operator',
-      address: '654 Bay Street, San Francisco, CA 94133',
-      businessRegNo: 'CA-TOR-2024-078',
-      submittedDate: '2 weeks ago',
-      status: 'approved'
-    }
-  ];
-
-  const userReports = [
-    { 
-      reportId: '#RPT-2024-156',
-      reportedUser: 'john_traveler23',
-      reportedBy: 'sarah_explorer',
-      reason: 'Inappropriate Content',
-      type: 'Content Violation',
-      severity: 'high',
-      submittedDate: '1 hour ago',
-      status: 'pending'
-    },
-    { 
-      reportId: '#RPT-2024-155',
-      reportedUser: 'fake_hotel_acc',
-      reportedBy: 'mike_reviewer',
-      reason: 'Fake Reviews',
-      type: 'Review Manipulation',
-      severity: 'medium',
-      submittedDate: '3 hours ago',
-      status: 'investigating'
-    },
-    { 
-      reportId: '#RPT-2024-154',
-      reportedUser: 'spam_promoter',
-      reportedBy: 'admin_system',
-      reason: 'Spam Activities',
-      type: 'Spam/Bot Activity',
-      severity: 'high',
-      submittedDate: '5 hours ago',
-      status: 'resolved'
-    },
-    { 
-      reportId: '#RPT-2024-153',
-      reportedUser: 'rude_customer',
-      reportedBy: 'hotel_manager_01',
-      reason: 'Harassment',
-      type: 'User Behavior',
-      severity: 'medium',
-      submittedDate: '8 hours ago',
-      status: 'pending'
-    },
-    { 
-      reportId: '#RPT-2024-152',
-      reportedUser: 'scammer_profile',
-      reportedBy: 'victim_user',
-      reason: 'Fraudulent Activity',
-      type: 'Fraud/Scam',
-      severity: 'high',
-      submittedDate: '12 hours ago',
-      status: 'investigating'
-    },
-    { 
-      reportId: '#RPT-2024-151',
-      reportedUser: 'bot_account_xyz',
-      reportedBy: 'security_system',
-      reason: 'Automated Posting',
-      type: 'Bot Activity',
-      severity: 'medium',
-      submittedDate: '15 hours ago',
-      status: 'resolved'
-    },
-    { 
-      reportId: '#RPT-2024-150',
-      reportedUser: 'offensive_reviewer',
-      reportedBy: 'hotel_staff_member',
-      reason: 'Abusive Language',
-      type: 'User Behavior',
-      severity: 'high',
-      submittedDate: '18 hours ago',
-      status: 'pending'
-    },
-    { 
-      reportId: '#RPT-2024-149',
-      reportedUser: 'duplicate_listings',
-      reportedBy: 'provider_complaint',
-      reason: 'Multiple Accounts',
-      type: 'Account Violation',
-      severity: 'medium',
-      submittedDate: '1 day ago',
-      status: 'investigating'
     }
   ];
 
@@ -280,13 +172,14 @@ const Dashboard = () => {
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'high': return 'destructive';
-      case 'medium': return 'secondary';
-      case 'low': return 'outline';
-      default: return 'secondary';
-    }
+  const handleApprove = (provider: any) => {
+    toast.success(`Approved ${provider.name}`);
+    // Add your approval logic here
+  };
+
+  const handleReject = (provider: any) => {
+    toast.error(`Rejected ${provider.name}`);
+    // Add your rejection logic here
   };
 
   if (loading) {
@@ -323,39 +216,6 @@ const Dashboard = () => {
           </div>
           
           <div className="flex items-center space-x-3">
-            {/* Connection Status */}
-            {/* <div className="flex items-center space-x-2 text-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-gray-600">Backend Connected</span>
-            </div> */}
-            
-            {/* API Test Button */}
-            {/* <Button 
-              onClick={testAPI}
-              variant="outline"
-              size="sm"
-              disabled={apiTesting}
-              className="text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white"
-            >
-              {apiTesting ? (
-                <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
-              ) : (
-                <CheckCircle className="w-4 h-4 mr-1" />
-              )}
-              Test API
-            </Button> */}
-            
-            {/* Refresh Profile */}
-            {/* <Button 
-              onClick={refreshProfile}
-              variant="outline"
-              size="sm"
-              className="text-gray-600 border-gray-300 hover:bg-gray-100"
-            >
-              <RefreshCw className="w-4 h-4 mr-1" />
-              Refresh
-            </Button> */}
-            
             {/* Logout Button */}
             <Button 
               onClick={handleLogout}
@@ -370,45 +230,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Admin Profile Banner */}
-      {/* {adminData && (
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-          <div className="flex items-center justify-between text-white">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">{adminData.username}</h2>
-                <p className="text-blue-100">{adminData.email}</p>
-                <div className="flex items-center mt-2 space-x-3">
-                  <Badge className="bg-white/20 text-white border-white/30">
-                    ID: {adminData.id}
-                  </Badge>
-                  <Badge className={adminData.isActive ? "bg-green-500/80 text-white" : "bg-red-500/80 text-white"}>
-                    {adminData.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                  <span className="text-sm text-blue-100">
-                    Admin since {new Date(adminData.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-blue-100">System Status</div>
-              <div className="text-lg font-semibold">All Systems Operational</div>
-              <div className="text-sm text-blue-200">
-                Frontend: Port 8081 • Backend: Port 8080
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
-
       {/* Original Dashboard Content */}
       <div className="p-8 space-y-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {stats.map((stat, index) => (
             <StatsWidget
               key={index}
@@ -422,8 +247,8 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Service Provider Approvals & User Reports */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {/* Service Provider Approvals */}
+        <div className="grid grid-cols-1 gap-8">
           {/* Recent Service Provider Approvals */}
           <Card className="p-6 shadow-md border-0 bg-white">
             <div className="flex items-center justify-between mb-6">
@@ -441,73 +266,67 @@ const Dashboard = () => {
               </Button>
             </div>
             
-            <div className="h-80 overflow-y-auto space-y-4 pr-2">
-              {recentApprovals.slice(0, 6).map((provider, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <div className="space-y-4">
+              {recentApprovals.map((provider, index) => (
+                <div key={index} className="flex items-center justify-between p-5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-semibold text-gray-900">{provider.name}</h4>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <Shield className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{provider.name}</h4>
+                          <p className="text-xs text-gray-500">{provider.email}</p>
+                        </div>
+                      </div>
                       <Badge className={`text-xs ${getStatusColor(provider.status)}`}>
-                        {provider.status.replace('_', ' ').toUpperCase()}
+                        {provider.status.toUpperCase()}
                       </Badge>
                     </div>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p><span className="font-medium">Type:</span> {provider.type}</p>
-                      <p><span className="font-medium">Address:</span> {provider.address}</p>
-                      <p><span className="font-medium">Business Reg No:</span> {provider.businessRegNo}</p>
-                      <p className="text-xs text-gray-500">Submitted {provider.submittedDate}</p>
-                    </div>
-                  </div>
-                  <Button size="sm" className="bg-[#0088cc] hover:bg-[#1e3d7a] ml-4">
-                    Review
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* User Reports */}
-          <Card className="p-6 shadow-md border-0 bg-white">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
-                  <Flag className="w-5 h-5 text-red-500" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">User Reports</h3>
-                  <p className="text-gray-600">Recent user reports and violations</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="text-red-500 border-red-500 hover:bg-red-500 hover:text-white">
-                View All
-              </Button>
-            </div>
-            
-            <div className="h-80 overflow-y-auto space-y-4 pr-2">
-              {userReports.slice(0, 6).map((report, index) => (
-                <div key={index} className="flex items-start justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-semibold text-gray-900 text-sm">{report.reportId}</h4>
-                      <Badge variant={getSeverityColor(report.severity)} className="text-xs">
-                        {report.severity.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p><span className="font-medium">Reported User:</span> {report.reportedUser}</p>
-                      <p><span className="font-medium">Reason:</span> {report.reason}</p>
-                      <p><span className="font-medium">Type:</span> {report.type}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge className={`text-xs ${getStatusColor(report.status)}`}>
-                          {report.status.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                        <span className="text-xs text-gray-500">{report.submittedDate}</span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600">
+                      <div>
+                        <span className="font-medium text-gray-700">Type:</span>
+                        <p className="text-purple-600 font-medium">{provider.type}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Reg No:</span>
+                        <p>{provider.businessRegNo}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Phone:</span>
+                        <p>{provider.phone}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Submitted:</span>
+                        <p>{provider.submittedDate}</p>
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white ml-4">
-                    Investigate
-                  </Button>
+                  <div className="flex items-center gap-2 ml-6">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="text-gray-600 border-gray-300 hover:bg-gray-100"
+                    >
+                      View
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="bg-[#0088cc] hover:bg-[#0077b3] text-white"
+                      onClick={() => handleApprove(provider)}
+                    >
+                      Approve
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                      onClick={() => handleReject(provider)}
+                    >
+                      Reject
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
