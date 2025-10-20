@@ -22,7 +22,7 @@ import {
   Globe,
   Eye,
   Percent,
-  AlertCircle,
+  RefreshCw,
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,9 +30,14 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 
-// API Configuration
-// const API_BASE_URL = 'http://localhost:8080';
-const API_BASE_URL = 'https://adminservice-production-19d3.up.railway.app';
+// ==================== API Configuration ====================
+// For development, use localhost. For production, use Railway URL.
+// @ts-ignore - Vite env variables
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '');
+// Alternative: Uncomment below for production
+// const API_BASE_URL = 'https://adminservice-production-19d3.up.railway.app';
+
+console.log('Commission API Base URL:', API_BASE_URL);
 
 // Helper function to get auth token
 const getAuthToken = () => {
@@ -61,117 +66,6 @@ const getAuthHeaders = () => {
   };
 };
 
-// API Functions
-const commissionAPI = {
-  // Get all commission settings
-  getSettings: async () => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch settings' }));
-      throw new Error(error.message || 'Failed to fetch settings');
-    }
-    return response.json();
-  },
-
-  // Update commission settings (individual)
-  updateSingleSetting: async (providerType, commissionRate) => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings/${providerType}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ commissionRate }),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to update settings' }));
-      throw new Error(error.message || 'Failed to update settings');
-    }
-    const text = await response.text();
-    return text ? JSON.parse(text) : {};
-  },
-
-  // Update commission settings (bulk)
-  updateSettings: async (settings) => {
-    const settingsArray = Object.entries(settings).map(([type, rate]) => ({
-      providerType: mapProviderTypeToBackend(type),
-      commissionRate: Number(rate),
-    }));
-
-    console.log('Original settings:', settings);
-    console.log('Sending bulk update:', settingsArray);
-    console.log('Stringified payload:', JSON.stringify(settingsArray, null, 2));
-    console.log('Request URL:', `${API_BASE_URL}/admin/auth/commissions/settings/bulk`);
-    console.log('Headers:', getAuthHeaders());
-
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings/bulk`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(settingsArray),
-    });
-
-    console.log('Response status:', response.status, response.statusText);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('Error response body:', text);
-      let error;
-      try {
-        error = JSON.parse(text);
-        console.error('Parsed error:', error);
-      } catch (e) {
-        console.error('Could not parse error as JSON:', e);
-        error = { message: text || `Failed to update settings (${response.status} ${response.statusText})` };
-      }
-      throw new Error(error.message || error.error || `Failed to update settings (${response.status})`);
-    }
-
-    const text = await response.text();
-    console.log('Success response body:', text);
-    return text ? JSON.parse(text) : {};
-  },
-
-  // Get all commissions
-  getAllCommissions: async () => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch commissions' }));
-      throw new Error(error.message || 'Failed to fetch commissions');
-    }
-    return response.json();
-  },
-
-  // Get commission statistics
-  getStatistics: async () => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/statistics`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch statistics' }));
-      throw new Error(error.message || 'Failed to fetch statistics');
-    }
-    return response.json();
-  },
-
-  // Initialize default settings
-  initializeSettings: async () => {
-    const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings/initialize`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to initialize settings' }));
-      throw new Error(error.message || 'Failed to initialize settings');
-    }
-    return response.json();
-  },
-};
-
 // Helper functions to map provider types
 const mapProviderTypeToBackend = (type) => {
   const mapping = {
@@ -191,6 +85,186 @@ const mapProviderTypeFromBackend = (type) => {
   return mapping[type] || type;
 };
 
+// ==================== API Functions ====================
+const commissionAPI = {
+  // Get all commission settings
+  getSettings: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      throw error;
+    }
+  },
+
+  // Update commission settings (bulk update)
+  updateSettings: async (settings) => {
+    try {
+      // Convert settings object to array format expected by backend
+      const settingsArray = Object.entries(settings).map(([type, rate]) => ({
+        providerType: mapProviderTypeToBackend(type),
+        commissionRate: Number(parseFloat(rate).toFixed(2))
+      }));
+
+      console.log('=== Bulk Update Request ===');
+      console.log('URL:', `${API_BASE_URL}/admin/auth/commissions/settings/bulk`);
+      console.log('Headers:', getAuthHeaders());
+      console.log('Payload:', JSON.stringify(settingsArray, null, 2));
+
+      const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings/bulk`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(settingsArray),
+      });
+
+      console.log('Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { message: errorText };
+        }
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      console.log('Success response:', responseText);
+      return responseText ? JSON.parse(responseText) : {};
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      throw error;
+    }
+  },
+
+  // Update single commission setting (fallback method)
+  updateSingleSetting: async (providerType, commissionRate) => {
+    try {
+      const payload = { commissionRate: Number(parseFloat(commissionRate).toFixed(2)) };
+
+      console.log(`Updating ${providerType}:`, payload);
+
+      const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings/${providerType}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error response for ${providerType}:`, errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { message: errorText };
+        }
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const text = await response.text();
+      return text ? JSON.parse(text) : {};
+    } catch (error) {
+      console.error(`Error updating ${providerType} setting:`, error);
+      throw error;
+    }
+  },
+
+  // Get all commissions
+  getAllCommissions: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/auth/commissions`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching commissions:', error);
+      throw error;
+    }
+  },
+
+  // Get commission statistics
+  getStatistics: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/statistics`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+      throw error;
+    }
+  },
+
+  // Initialize default settings
+  initializeSettings: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/auth/commissions/settings/initialize`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error initializing settings:', error);
+      throw error;
+    }
+  },
+
+  // Get all service providers with revenue data
+  getServiceProviders: async () => {
+    try {
+      const response = await fetch('https://serviceprovidersservice-production-8f10.up.railway.app/service/providers/all', {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching service providers:', error);
+      throw error;
+    }
+  },
+};
+
+// ==================== TypeScript Interfaces ====================
 interface CommissionData {
   id: string
   serviceProvider: string
@@ -216,8 +290,44 @@ interface CommissionSettings {
   "Tour Service": number
 }
 
+interface ServiceProviderRevenue {
+  totalRevenue: string
+  completedRevenue: string
+  pendingRevenue: string
+  totalBookings: number
+  completedBookings: number
+  pendingBookings: number
+  cancelledBookings: number
+  averageBookingValue: string
+}
+
+interface ServiceProvider {
+  id: number
+  username: string
+  email: string
+  businessRegistrationNumber: string
+  address: string
+  contactNo: string
+  serviceType: "HOTEL" | "TOUR_GUIDE" | "TRAVEL_AGENT"
+  isApproved: boolean
+  isActive: boolean
+  isProfileCreated: boolean
+  revenue: ServiceProviderRevenue
+}
+
+interface ServiceProvidersResponse {
+  totalProviders: number
+  totalHotels: number
+  totalTourGuides: number
+  totalAgencies: number
+  hotels: ServiceProvider[]
+  tourGuides: ServiceProvider[]
+  agencies: ServiceProvider[]
+}
+
+// ==================== Main Component ====================
 const Commissions: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState("settings")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [selectedMonth, setSelectedMonth] = useState("all")
@@ -242,6 +352,10 @@ const Commissions: React.FC = () => {
     totalRevenue: 0,
   })
 
+  // Service providers state
+  const [serviceProviders, setServiceProviders] = useState<ServiceProvidersResponse | null>(null)
+  const [allProviders, setAllProviders] = useState<ServiceProvider[]>([])
+
   // Load data on component mount
   useEffect(() => {
     loadInitialData()
@@ -259,8 +373,12 @@ const Commissions: React.FC = () => {
 
       // Load statistics
       await loadStatistics()
+
+      // Load service providers data
+      await loadServiceProviders()
     } catch (err) {
-      setError(err.message || 'Failed to load data')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load data'
+      setError(errorMessage)
       console.error('Error loading initial data:', err)
     } finally {
       setLoading(false)
@@ -270,33 +388,48 @@ const Commissions: React.FC = () => {
   const loadCommissionSettings = async () => {
     try {
       const response = await commissionAPI.getSettings()
+      console.log('Loaded settings response:', response)
+
       if (response.settings) {
         const mappedSettings = {
           Hotel: parseFloat(response.settings.HOTEL || 12.5),
           "Travel Service": parseFloat(response.settings.TRAVEL_SERVICE || 10.0),
           "Tour Service": parseFloat(response.settings.TOUR_SERVICE || 15.0),
         }
+        console.log('Mapped settings:', mappedSettings)
         setCommissionSettings(mappedSettings)
         setTempSettings(mappedSettings)
       }
     } catch (err) {
       console.error('Error loading commission settings:', err)
-      console.warn('Using default settings - backend database not configured')
-      // Use default settings if backend is not ready
-      const defaultSettings = {
-        Hotel: 12.5,
-        "Travel Service": 10.0,
-        "Tour Service": 15.0,
+      // Try to initialize if settings don't exist
+      try {
+        console.log('Attempting to initialize default settings...')
+        await commissionAPI.initializeSettings()
+        await loadCommissionSettings()
+      } catch (initErr) {
+        console.error('Error initializing settings:', initErr)
+        // Use default settings if initialization fails
+        setCommissionSettings({
+          Hotel: 12.5,
+          "Travel Service": 10.0,
+          "Tour Service": 15.0,
+        })
+        setTempSettings({
+          Hotel: 12.5,
+          "Travel Service": 10.0,
+          "Tour Service": 15.0,
+        })
       }
-      setCommissionSettings(defaultSettings)
-      setTempSettings(defaultSettings)
     }
   }
 
   const loadCommissions = async () => {
     try {
       const response = await commissionAPI.getAllCommissions()
-      if (response.commissions) {
+      console.log('Loaded commissions response:', response)
+
+      if (response.commissions && Array.isArray(response.commissions)) {
         // Map backend data to frontend format
         const mappedCommissions = response.commissions.map((c: any) => ({
           id: c.id.toString(),
@@ -317,6 +450,8 @@ const Commissions: React.FC = () => {
           address: c.address || '',
         }))
         setCommissions(mappedCommissions)
+      } else {
+        setCommissions([])
       }
     } catch (err) {
       console.error('Error loading commissions:', err)
@@ -328,6 +463,8 @@ const Commissions: React.FC = () => {
   const loadStatistics = async () => {
     try {
       const response = await commissionAPI.getStatistics()
+      console.log('Loaded statistics response:', response)
+
       setStats({
         totalCommissions: parseFloat(response.totalCommissions || 0),
         totalRevenue: parseFloat(response.totalRevenue || 0),
@@ -341,13 +478,78 @@ const Commissions: React.FC = () => {
     }
   }
 
+  const loadServiceProviders = async () => {
+    try {
+      const response = await commissionAPI.getServiceProviders()
+      console.log('Loaded service providers response:', response)
+
+      setServiceProviders(response)
+
+      // Combine all providers into a single array for easy searching
+      const combined: ServiceProvider[] = [
+        ...(response.hotels || []),
+        ...(response.tourGuides || []),
+        ...(response.agencies || [])
+      ]
+      setAllProviders(combined)
+      console.log('Total providers loaded:', combined.length)
+    } catch (err) {
+      console.error('Error loading service providers:', err)
+      // Set empty values if API fails
+      setServiceProviders(null)
+      setAllProviders([])
+    }
+  }
+
   const months = [...new Set(commissions.map(c => c.month).filter(Boolean))]
   const uniqueProviders = [...new Set(commissions.map((c) => c.serviceProvider))]
 
+  // Helper function to get provider details by business registration number or username
+  const getProviderDetails = (providerName: string): ServiceProvider | null => {
+    return allProviders.find(
+      (p) => p.username.toLowerCase() === providerName.toLowerCase() ||
+             p.businessRegistrationNumber.toLowerCase() === providerName.toLowerCase()
+    ) || null
+  }
+
+  // Helper function to calculate commission for a provider
+  const calculateCommission = (provider: ServiceProvider, revenueAmount: string): number => {
+    const serviceTypeMap = {
+      'HOTEL': 'Hotel',
+      'TOUR_GUIDE': 'Tour Service',
+      'TRAVEL_AGENT': 'Travel Service'
+    };
+    const displayType = serviceTypeMap[provider.serviceType] as keyof CommissionSettings;
+    const commissionRate = commissionSettings[displayType] || 0;
+    const revenue = parseFloat(revenueAmount || '0');
+    return (revenue * commissionRate) / 100;
+  }
+
+  // Calculate total commissions from all providers
+  const calculateTotalCommissions = () => {
+    let totalCommission = 0;
+    let completedCommission = 0;
+    let pendingCommission = 0;
+
+    allProviders.forEach(provider => {
+      totalCommission += calculateCommission(provider, provider.revenue.totalRevenue);
+      completedCommission += calculateCommission(provider, provider.revenue.completedRevenue);
+      pendingCommission += calculateCommission(provider, provider.revenue.pendingRevenue);
+    });
+
+    return {
+      totalCommission,
+      completedCommission,
+      pendingCommission
+    };
+  }
+
   const handleSettingsChange = (type: keyof CommissionSettings, value: number) => {
+    // Ensure value is within bounds (0-25%)
+    const newValue = Math.max(0, Math.min(25, value))
     setTempSettings((prev) => ({
       ...prev,
-      [type]: value,
+      [type]: parseFloat(newValue.toFixed(1)),
     }))
   }
 
@@ -356,64 +558,64 @@ const Commissions: React.FC = () => {
     setError(null)
     setSuccessMessage(null)
 
-    // Prevent infinite recursion
-    const maxRetries = 1
-    let retryCount = 0
+    try {
+      console.log('Saving settings:', tempSettings)
 
-    const attemptSave = async () => {
+      // First, try to initialize settings if they don't exist
       try {
-        console.log('=== Starting commission settings update ===')
-        console.log('Saving settings:', tempSettings)
+        console.log('Attempting to initialize settings...')
+        await commissionAPI.initializeSettings()
+        console.log('Settings initialized successfully')
+      } catch (initErr) {
+        console.log('Initialize returned error (might already exist):', initErr.message)
+        // It's okay if this fails - settings might already exist
+      }
 
-        // First, try to initialize settings if they don't exist
-        console.log('Ensuring settings are initialized...')
-        try {
-          await commissionAPI.initializeSettings()
-          console.log('Settings initialized successfully')
-        } catch (initErr) {
-          console.log('Initialize returned error (might already exist):', initErr.message)
-          // It's okay if this fails - settings might already exist
-        }
-
-        // Now try individual updates
-        const updatePromises = Object.entries(tempSettings).map(([type, rate]) => {
-          const backendType = mapProviderTypeToBackend(type)
-          console.log(`Updating ${type} (${backendType}) to ${rate}%`)
-          return commissionAPI.updateSingleSetting(backendType, Number(rate))
-        })
-
-        const results = await Promise.all(updatePromises)
-        console.log('Update results:', results)
+      // Try bulk update first
+      try {
+        console.log('Attempting bulk update...')
+        const response = await commissionAPI.updateSettings(tempSettings)
+        console.log('Bulk update successful:', response)
 
         setCommissionSettings(tempSettings)
         setSuccessMessage('Commission settings updated successfully!')
-        // Reload settings to ensure we have the latest data
-        await loadCommissionSettings()
-        console.log('=== Commission settings update completed ===')
         setTimeout(() => setSuccessMessage(null), 3000)
-      } catch (err) {
-        const errorMessage = err.message || 'Failed to save settings'
-        console.error('=== Error saving settings ===')
-        console.error('Error object:', err)
-        console.error('Error message:', errorMessage)
-        console.error('Error stack:', err.stack)
+        await loadCommissionSettings()
+        return
+      } catch (bulkErr) {
+        console.log('Bulk update failed, trying individual updates:', bulkErr.message)
 
-        // If it's a server error and we haven't retried yet, try initializing first
-        if ((errorMessage.includes('500') || errorMessage.includes('Internal Server Error')) && retryCount < maxRetries) {
-          console.log('Server error detected, will initialize and retry...')
-          retryCount++
-          await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second
-          return attemptSave()
-        }
+        // Fallback to individual updates
+        const updatePromises = Object.entries(tempSettings).map(([type, rate]) => {
+          const backendType = mapProviderTypeToBackend(type)
+          console.log(`Updating ${type} (${backendType}) to ${rate}%`)
+          return commissionAPI.updateSingleSetting(backendType, rate)
+        })
 
-        setError(`Database Error: The commission settings table doesn't exist in the backend database. Please contact your backend developer to run database migrations or create the commission_settings table.`)
-        // Reset temp settings to current settings on error
-        setTempSettings(commissionSettings)
+        const results = await Promise.all(updatePromises)
+        console.log('Individual updates successful:', results)
+
+        setCommissionSettings(tempSettings)
+        setSuccessMessage('Commission settings updated successfully!')
+        setTimeout(() => setSuccessMessage(null), 3000)
+        await loadCommissionSettings()
       }
-    }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save settings'
+      console.error('Error saving settings:', err)
 
-    try {
-      await attemptSave()
+      // Provide user-friendly error message
+      if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error')) {
+        setError(
+          'Database Error: The commission settings table may not exist in the backend database. ' +
+          'Please contact your backend developer to run database migrations or create the commission_settings table.'
+        )
+      } else {
+        setError(`Failed to save settings: ${errorMessage}`)
+      }
+
+      // Reset temp settings to current settings on error
+      setTempSettings(commissionSettings)
     } finally {
       setLoading(false)
     }
@@ -421,10 +623,19 @@ const Commissions: React.FC = () => {
 
   const resetSettings = () => {
     setTempSettings(commissionSettings)
+    setError(null)
+  }
+
+  const refreshData = async () => {
+    await loadInitialData()
   }
 
   const toggleProviderExpansion = (provider: string) => {
-    setExpandedProviders((prev) => (prev.includes(provider) ? prev.filter((p) => p !== provider) : [...prev, provider]))
+    setExpandedProviders((prev) =>
+      prev.includes(provider)
+        ? prev.filter((p) => p !== provider)
+        : [...prev, provider]
+    )
   }
 
   const handleViewProvider = (commission: CommissionData) => {
@@ -490,29 +701,67 @@ const Commissions: React.FC = () => {
     return "text-red-600 bg-red-50"
   }
 
+  // Check if settings have changed
+  const hasChanges = JSON.stringify(tempSettings) !== JSON.stringify(commissionSettings)
+
   return (
     <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
       {/* Error and Success Messages */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex justify-between items-center">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-red-900 font-bold">×</button>
         </div>
       )}
       {successMessage && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-          {successMessage}
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex justify-between items-center">
+          <span>{successMessage}</span>
+          <button onClick={() => setSuccessMessage(null)} className="text-green-900 font-bold">×</button>
         </div>
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <Card className="p-6 bg-white shadow-lg border-0">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-green-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">Rs {calculateTotalCommissions().totalCommission.toLocaleString()}</p>
+              <p className="text-sm text-gray-600">Total Commission</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-6 bg-white shadow-lg border-0">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-purple-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">Rs {allProviders.reduce((sum, p) => sum + parseFloat(p.revenue.totalRevenue || '0'), 0).toLocaleString()}</p>
+              <p className="text-sm text-gray-600">Total Revenue</p>
+            </div>
+          </div>
+        </Card>
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center">
               <Percent className="w-6 h-6 text-indigo-500" />
             </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-900">Commission Rates</p>
+            <div className="space-y-2 flex-1">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-900">Commission Rates</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={refreshData}
+                  disabled={loading}
+                  className="h-6 w-6 p-0"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-600 flex items-center gap-1">
@@ -553,23 +802,31 @@ const Commissions: React.FC = () => {
         </Card>
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-green-500" />
+            <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-blue-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">Rs {stats.totalCommissions.toLocaleString()}</p>
-              <p className="text-sm text-gray-600">Total Commissions</p>
+              <p className="text-2xl font-bold">{serviceProviders?.totalProviders || 0}</p>
+              <p className="text-sm text-gray-600">Active Providers</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {serviceProviders?.totalHotels || 0} Hotels • {serviceProviders?.totalTourGuides || 0} Tours • {serviceProviders?.totalAgencies || 0} Agencies
+              </p>
             </div>
           </div>
         </Card>
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-purple-500" />
+            <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-orange-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">Rs {stats.totalRevenue.toLocaleString()}</p>
-              <p className="text-sm text-gray-600">Total Revenue</p>
+              <p className="text-2xl font-bold">
+                {allProviders.reduce((sum, p) => sum + p.revenue.completedBookings, 0)}
+              </p>
+              <p className="text-sm text-gray-600">Completed Bookings</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {allProviders.reduce((sum, p) => sum + p.revenue.pendingBookings, 0)} pending
+              </p>
             </div>
           </div>
         </Card>
@@ -578,18 +835,6 @@ const Commissions: React.FC = () => {
       {/* Tabs */}
       <Card className="bg-white shadow-lg border-0">
         <div className="flex border-b">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
-              activeTab === "overview"
-                ? "text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            <BarChart3 className="w-5 h-5" />
-            Commission Overview
-            <Badge className="bg-blue-100 text-blue-800 ml-2">{commissions.length}</Badge>
-          </button>
           <button
             onClick={() => setActiveTab("settings")}
             className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
@@ -600,32 +845,94 @@ const Commissions: React.FC = () => {
           >
             <Settings className="w-5 h-5" />
             Commission Settings
+            {hasChanges && <Badge className="bg-yellow-100 text-yellow-800 ml-2">Unsaved</Badge>}
           </button>
+          
+          
+          
           <button
-            onClick={() => setActiveTab("providers")}
+            onClick={() => setActiveTab("revenue")}
             className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
-              activeTab === "providers"
+              activeTab === "revenue"
                 ? "text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5"
                 : "text-gray-600 hover:text-gray-800"
             }`}
           >
-            <Building2 className="w-5 h-5" />
-            Provider Details
-            <Badge className="bg-green-100 text-green-800 ml-2">{uniqueProviders.length}</Badge>
-          </button>
-          <button
-            onClick={() => setActiveTab("monthly")}
-            className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
-              activeTab === "monthly"
-                ? "text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            <Calendar className="w-5 h-5" />
-            Monthly Reports
+            <DollarSign className="w-5 h-5" />
+            Provider Revenue
+            <Badge className="bg-purple-100 text-purple-800 ml-2">{allProviders.length}</Badge>
           </button>
         </div>
       </Card>
+
+      {/* Commission Settings Tab */}
+      {activeTab === "settings" && (
+        <Card className="p-6 bg-white shadow-lg border-0">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Commission Rate Settings</h3>
+            <p className="text-gray-600">Configure commission percentages for different service provider types</p>
+          </div>
+          <div className="space-y-6">
+            {Object.entries(tempSettings).map(([type, rate]) => (
+              <div key={type} className="flex items-center justify-between p-6 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-[#0088cc]/10 rounded-xl flex items-center justify-center">
+                    {getTypeIcon(type)}
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">{type}</h3>
+                   
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSettingsChange(type as keyof CommissionSettings, rate - 0.5)}
+                    disabled={loading || rate <= 0}
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <div className="text-center min-w-[100px]">
+                    <div className={`text-3xl font-bold px-4 py-2 rounded-lg ${getPercentageColor(rate)}`}>
+                      {rate.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">Commission Rate</div>
+                    <div className="w-20 mt-2">
+                      <Progress value={(rate / 25) * 100} className="h-2" />
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSettingsChange(type as keyof CommissionSettings, rate + 0.5)}
+                    disabled={loading || rate >= 25}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={resetSettings}
+                disabled={loading || !hasChanges}
+              >
+                Reset Changes
+              </Button>
+              <Button
+                onClick={saveSettings}
+                className="bg-[#0088cc] hover:bg-[#0088cc]/90"
+                disabled={loading || !hasChanges}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {loading ? 'Saving...' : 'Save Settings'}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Overview Tab */}
       {activeTab === "overview" && (
@@ -676,7 +983,8 @@ const Commissions: React.FC = () => {
             </div>
             {loading ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">Loading commissions...</p>
+                <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400" />
+                <p className="text-gray-500 mt-2">Loading commissions...</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -754,259 +1062,360 @@ const Commissions: React.FC = () => {
         </>
       )}
 
-      {/* Commission Settings Tab */}
-      {activeTab === "settings" && (
-        <Card className="p-6 bg-white shadow-lg border-0">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Commission Rate Settings</h3>
-            <p className="text-gray-600">Configure commission percentages for different service provider types</p>
-          </div>
-
-          {/* Backend Setup Warning */}
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-              <div>
-                <h4 className="font-semibold text-yellow-900 mb-1">Backend Database Setup Required</h4>
-                <p className="text-sm text-yellow-800 mb-2">
-                  The commission settings feature requires the backend database to have the <code className="bg-yellow-100 px-1 rounded">commission_settings</code> table.
-                  If you get errors when saving, please ensure your backend developer has:
-                </p>
-                <ul className="text-sm text-yellow-800 list-disc list-inside space-y-1 ml-2">
-                  <li>Created the CommissionSettings entity/table in the database</li>
-                  <li>Run database migrations</li>
-                  <li>Configured the relationship between Commission and CommissionSettings entities</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-6">
-            {Object.entries(tempSettings).map(([type, rate]) => (
-              <div key={type} className="flex items-center justify-between p-6 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-[#0088cc]/10 rounded-xl flex items-center justify-center">
-                    {getTypeIcon(type)}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">{type}</h3>
-                    <p className="text-sm text-gray-500">
-                      {getCommissionsByType(type)} providers • Rs {getTotalCommissionByType(type).toLocaleString()}{" "}
-                      total
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSettingsChange(type as keyof CommissionSettings, Math.max(0, rate - 0.5))}
-                    disabled={loading}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </Button>
-                  <div className="text-center min-w-[100px]">
-                    <div className={`text-3xl font-bold px-4 py-2 rounded-lg ${getPercentageColor(rate)}`}>{rate}%</div>
-                    <div className="text-xs text-gray-500 mt-1">Commission Rate</div>
-                    <div className="w-20 mt-2">
-                      <Progress value={(rate / 25) * 100} className="h-2" />
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSettingsChange(type as keyof CommissionSettings, Math.min(25, rate + 0.5))}
-                    disabled={loading}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            <div className="flex justify-between items-center pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  setLoading(true)
-                  try {
-                    await commissionAPI.initializeSettings()
-                    await loadCommissionSettings()
-                    setSuccessMessage('Settings initialized successfully!')
-                    setTimeout(() => setSuccessMessage(null), 3000)
-                  } catch (err) {
-                    setError(`Failed to initialize: ${err.message}`)
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-                disabled={loading}
-                className="text-blue-600 border-blue-600 hover:bg-blue-50"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Initialize Settings
-              </Button>
-              <div className="flex space-x-3">
-                <Button variant="outline" onClick={resetSettings} disabled={loading}>
-                  Reset Changes
-                </Button>
-                <Button onClick={saveSettings} className="bg-[#0088cc] hover:bg-[#0088cc]/90" disabled={loading}>
-                  <Save className="w-4 h-4 mr-2" />
-                  {loading ? 'Saving...' : 'Save Settings'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Provider Details Tab */}
+      {/* Provider Details Tab - Keeping it brief for length */}
       {activeTab === "providers" && (
         <Card className="p-6 bg-white shadow-lg border-0">
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Provider Commission Details</h3>
             <p className="text-gray-600">Detailed commission breakdown by service provider</p>
           </div>
-          <div className="space-y-4">
-            {uniqueProviders.map((provider) => {
-              const providerCommissions = commissions.filter((c) => c.serviceProvider === provider)
-              const totalCommission = providerCommissions.reduce((sum, c) => sum + c.amount, 0)
-              const averageRate =
-                providerCommissions.reduce((sum, c) => sum + c.percentage, 0) / providerCommissions.length
-              const isExpanded = expandedProviders.includes(provider)
-              return (
-                <div key={provider} className="border rounded-lg">
-                  <button
-                    onClick={() => toggleProviderExpansion(provider)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-[#0088cc]/10 rounded-xl flex items-center justify-center">
-                        {getTypeIcon(providerCommissions[0].providerType)}
-                      </div>
-                      <div className="text-left">
-                        <div className="font-medium text-gray-900">{provider}</div>
-                        <div className="text-sm text-gray-500">
-                          {providerCommissions[0].providerType} • {providerCommissions.length} transactions
+          {uniqueProviders.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No providers found
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {uniqueProviders.map((provider) => {
+                const providerCommissions = commissions.filter((c) => c.serviceProvider === provider)
+                const totalCommission = providerCommissions.reduce((sum, c) => sum + c.amount, 0)
+                const averageRate =
+                  providerCommissions.reduce((sum, c) => sum + c.percentage, 0) / providerCommissions.length
+                const isExpanded = expandedProviders.includes(provider)
+                return (
+                  <div key={provider} className="border rounded-lg">
+                    <button
+                      onClick={() => toggleProviderExpansion(provider)}
+                      className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-[#0088cc]/10 rounded-xl flex items-center justify-center">
+                          {getTypeIcon(providerCommissions[0].providerType)}
+                        </div>
+                        <div className="text-left">
+                          <div className="font-medium text-gray-900">{provider}</div>
+                          <div className="text-sm text-gray-500">
+                            {providerCommissions[0].providerType} • {providerCommissions.length} transactions
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <div className="font-semibold text-green-600">Rs {totalCommission.toLocaleString()}</div>
-                        <div className="text-sm text-gray-500">Total Commission</div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <div className="font-semibold text-green-600">Rs {totalCommission.toLocaleString()}</div>
+                          <div className="text-sm text-gray-500">Total Commission</div>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-sm font-bold ${getPercentageColor(averageRate)}`}>
+                          {averageRate.toFixed(1)}%
+                        </div>
+                        {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${getPercentageColor(averageRate)}`}>
-                        {averageRate.toFixed(1)}%
-                      </div>
-                      {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                    </div>
-                  </button>
-                  {isExpanded && (
-                    <div className="border-t bg-gray-50 p-4">
-                      <div className="space-y-2">
-                        {providerCommissions.map((commission) => (
-                          <div
-                            key={commission.id}
-                            className="flex items-center justify-between p-3 bg-white border rounded-lg"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <span className="text-sm text-gray-600">{commission.transactionId}</span>
-                              <span className="text-sm text-gray-500">
-                                {new Date(commission.date).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                              <div className="text-right">
-                                <div className="font-medium text-green-600">
-                                  Rs {commission.amount.toLocaleString()}
+                    </button>
+                    {isExpanded && (
+                      <div className="border-t bg-gray-50 p-4">
+                        <div className="space-y-2">
+                          {providerCommissions.map((commission) => (
+                            <div
+                              key={commission.id}
+                              className="flex items-center justify-between p-3 bg-white border rounded-lg"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <span className="text-sm text-gray-600">{commission.transactionId}</span>
+                                <span className="text-sm text-gray-500">
+                                  {new Date(commission.date).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-3">
+                                <div className="text-right">
+                                  <div className="font-medium text-green-600">
+                                    Rs {commission.amount.toLocaleString()}
+                                  </div>
+                                  <div className="text-xs text-gray-500">Commission</div>
                                 </div>
-                                <div className="text-xs text-gray-500">Commission</div>
-                              </div>
-                              <div
-                                className={`px-2 py-1 rounded text-xs font-bold ${getPercentageColor(commission.percentage)}`}
-                              >
-                                {commission.percentage}%
+                                <div
+                                  className={`px-2 py-1 rounded text-xs font-bold ${getPercentageColor(commission.percentage)}`}
+                                >
+                                  {commission.percentage}%
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </Card>
       )}
 
       {/* Monthly Reports Tab */}
       {activeTab === "monthly" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {months.map((month) => {
-            const monthCommissions = commissions.filter((c) => c.month === month)
-            const monthTotal = monthCommissions.reduce((sum, c) => sum + c.amount, 0)
-            const monthRevenue = monthCommissions.reduce((sum, c) => sum + c.revenue, 0)
-            const avgRate =
-              monthCommissions.length > 0
-                ? monthCommissions.reduce((sum, c) => sum + c.percentage, 0) / monthCommissions.length
-                : 0
-            return (
-              <Card key={month} className="p-6 bg-white shadow-lg border-0">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#0088cc]/10 rounded-xl flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-[#0088cc]" />
-                    </div>
-                    <h3 className="text-lg font-semibold">
-                      {new Date(month + "-01").toLocaleDateString("en-US", { year: "numeric", month: "long" })}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-[#0088cc]/10 text-[#0088cc]">{monthCommissions.length} transactions</Badge>
-                    <div className={`px-2 py-1 rounded text-sm font-bold ${getPercentageColor(avgRate)}`}>
-                      {avgRate.toFixed(1)}% avg
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">Rs {monthTotal.toLocaleString()}</div>
-                    <div className="text-sm text-green-600">Total Commission</div>
-                  </div>
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">Rs {monthRevenue.toLocaleString()}</div>
-                    <div className="text-sm text-blue-600">Total Revenue</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {["Hotel", "Travel Service", "Tour Service"].map((type) => {
-                    const typeCommissions = monthCommissions.filter((c) => c.providerType === type)
-                    const typeTotal = typeCommissions.reduce((sum, c) => sum + c.amount, 0)
-                    const typeAvgRate =
-                      typeCommissions.length > 0
-                        ? typeCommissions.reduce((sum, c) => sum + c.percentage, 0) / typeCommissions.length
-                        : 0
-                    return (
-                      <div key={type} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                        <div className="flex items-center space-x-2">
-                          {getTypeIcon(type)}
-                          <span className="text-sm font-medium">{type}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="text-sm font-semibold">Rs {typeTotal.toLocaleString()}</div>
-                          {typeCommissions.length > 0 && (
-                            <div className={`px-2 py-1 rounded text-xs font-bold ${getPercentageColor(typeAvgRate)}`}>
-                              {typeAvgRate.toFixed(1)}%
-                            </div>
-                          )}
-                        </div>
+          {months.length === 0 ? (
+            <div className="col-span-2 text-center py-8 text-gray-500">
+              No monthly data available
+            </div>
+          ) : (
+            months.map((month) => {
+              const monthCommissions = commissions.filter((c) => c.month === month)
+              const monthTotal = monthCommissions.reduce((sum, c) => sum + c.amount, 0)
+              const monthRevenue = monthCommissions.reduce((sum, c) => sum + c.revenue, 0)
+              const avgRate =
+                monthCommissions.length > 0
+                  ? monthCommissions.reduce((sum, c) => sum + c.percentage, 0) / monthCommissions.length
+                  : 0
+              return (
+                <Card key={month} className="p-6 bg-white shadow-lg border-0">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#0088cc]/10 rounded-xl flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-[#0088cc]" />
                       </div>
-                    )
-                  })}
+                      <h3 className="text-lg font-semibold">
+                        {new Date(month + "-01").toLocaleDateString("en-US", { year: "numeric", month: "long" })}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-[#0088cc]/10 text-[#0088cc]">{monthCommissions.length} transactions</Badge>
+                      <div className={`px-2 py-1 rounded text-sm font-bold ${getPercentageColor(avgRate)}`}>
+                        {avgRate.toFixed(1)}% avg
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">Rs {monthTotal.toLocaleString()}</div>
+                      <div className="text-sm text-green-600">Total Commission</div>
+                    </div>
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">Rs {monthRevenue.toLocaleString()}</div>
+                      <div className="text-sm text-blue-600">Total Revenue</div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {["Hotel", "Travel Service", "Tour Service"].map((type) => {
+                      const typeCommissions = monthCommissions.filter((c) => c.providerType === type)
+                      const typeTotal = typeCommissions.reduce((sum, c) => sum + c.amount, 0)
+                      const typeAvgRate =
+                        typeCommissions.length > 0
+                          ? typeCommissions.reduce((sum, c) => sum + c.percentage, 0) / typeCommissions.length
+                          : 0
+                      return (
+                        <div key={type} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                          <div className="flex items-center space-x-2">
+                            {getTypeIcon(type)}
+                            <span className="text-sm font-medium">{type}</span>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <div className="text-sm font-semibold">Rs {typeTotal.toLocaleString()}</div>
+                            {typeCommissions.length > 0 && (
+                              <div className={`px-2 py-1 rounded text-xs font-bold ${getPercentageColor(typeAvgRate)}`}>
+                                {typeAvgRate.toFixed(1)}%
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </Card>
+              )
+            })
+          )}
+        </div>
+      )}
+
+      {/* Provider Revenue Tab */}
+      {activeTab === "revenue" && (
+        <div className="space-y-6">
+          {/* Commission Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-600 font-medium">Total Commission</p>
+                  <p className="text-3xl font-bold text-green-900 mt-2">
+                    Rs {calculateTotalCommissions().totalCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">From all providers</p>
                 </div>
-              </Card>
-            )
-          })}
+                <DollarSign className="w-12 h-12 text-green-500 opacity-50" />
+              </div>
+            </Card>
+            <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-600 font-medium">Completed Commission</p>
+                  <p className="text-3xl font-bold text-blue-900 mt-2">
+                    Rs {calculateTotalCommissions().completedCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">Received</p>
+                </div>
+                <DollarSign className="w-12 h-12 text-blue-500 opacity-50" />
+              </div>
+            </Card>
+            <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-orange-600 font-medium">Pending Commission</p>
+                  <p className="text-3xl font-bold text-orange-900 mt-2">
+                    Rs {calculateTotalCommissions().pendingCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </p>
+                  <p className="text-xs text-orange-600 mt-1">Awaiting payment</p>
+                </div>
+                <DollarSign className="w-12 h-12 text-orange-500 opacity-50" />
+              </div>
+            </Card>
+          </div>
+
+          {/* Provider Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card className="p-6 bg-white shadow-md border-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Total Providers</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">{serviceProviders?.totalProviders || 0}</p>
+                </div>
+                <Building2 className="w-10 h-10 text-indigo-500 opacity-70" />
+              </div>
+            </Card>
+            <Card className="p-6 bg-white shadow-md border-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Hotels</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">{serviceProviders?.totalHotels || 0}</p>
+                </div>
+                <Building2 className="w-10 h-10 text-green-500 opacity-70" />
+              </div>
+            </Card>
+            <Card className="p-6 bg-white shadow-md border-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Tour Guides</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">{serviceProviders?.totalTourGuides || 0}</p>
+                </div>
+                <Users className="w-10 h-10 text-purple-500 opacity-70" />
+              </div>
+            </Card>
+            <Card className="p-6 bg-white shadow-md border-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Travel Agencies</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">{serviceProviders?.totalAgencies || 0}</p>
+                </div>
+                <CreditCard className="w-10 h-10 text-orange-500 opacity-70" />
+              </div>
+            </Card>
+          </div>
+
+          {/* All Providers Revenue & Commission Table */}
+          <Card className="p-6 bg-white shadow-lg border-0">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Provider Revenue & Commission Overview</h3>
+              <p className="text-gray-600">Revenue breakdown and calculated commissions based on current commission settings</p>
+            </div>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Loading provider revenue data...</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-medium text-gray-900">Provider</th>
+                      <th className="text-left p-3 font-medium text-gray-900">Type</th>
+                      <th className="text-left p-3 font-medium text-gray-900">Rate</th>
+                      <th className="text-left p-3 font-medium text-gray-900">Total Revenue</th>
+                      <th className="text-left p-3 font-medium text-gray-900">Total Commission</th>
+                      <th className="text-left p-3 font-medium text-gray-900">Completed Commission</th>
+                      <th className="text-left p-3 font-medium text-gray-900">Pending Commission</th>
+                      <th className="text-left p-3 font-medium text-gray-900">Bookings</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allProviders.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-gray-500">
+                          No service providers found
+                        </td>
+                      </tr>
+                    ) : (
+                      allProviders.map((provider) => {
+                        const serviceTypeMap = {
+                          'HOTEL': 'Hotel',
+                          'TOUR_GUIDE': 'Tour Service',
+                          'TRAVEL_AGENT': 'Travel Service'
+                        };
+                        const displayType = serviceTypeMap[provider.serviceType] || provider.serviceType;
+                        const commissionRate = commissionSettings[displayType as keyof CommissionSettings] || 0;
+                        const totalCommission = calculateCommission(provider, provider.revenue.totalRevenue);
+                        const completedCommission = calculateCommission(provider, provider.revenue.completedRevenue);
+                        const pendingCommission = calculateCommission(provider, provider.revenue.pendingRevenue);
+
+                        return (
+                          <tr key={provider.id} className="border-b hover:bg-gray-50">
+                            <td className="p-3">
+                              <div>
+                                <p className="font-medium">{provider.username}</p>
+                                <p className="text-sm text-gray-500">{provider.businessRegistrationNumber}</p>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <Badge className={getTypeBadgeClass(displayType)}>
+                                {getTypeIcon(displayType)}
+                                <span className="ml-1">{displayType}</span>
+                              </Badge>
+                            </td>
+                            <td className="p-3">
+                              <div className={`px-3 py-1 rounded-full text-sm font-bold inline-block ${getPercentageColor(commissionRate)}`}>
+                                {commissionRate}%
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <span className="font-medium text-gray-700">
+                                Rs {parseFloat(provider.revenue.totalRevenue || '0').toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <span className="font-semibold text-green-600">
+                                Rs {totalCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <span className="font-medium text-blue-600">
+                                Rs {completedCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <span className="font-medium text-orange-600">
+                                Rs {pendingCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <div className="text-sm">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-green-600 font-medium">{provider.revenue.completedBookings}</span>
+                                  <span className="text-gray-400">/</span>
+                                  <span className="text-gray-600">{provider.revenue.totalBookings}</span>
+                                </div>
+                                {provider.revenue.cancelledBookings > 0 && (
+                                  <span className="text-xs text-red-500">
+                                    {provider.revenue.cancelledBookings} cancelled
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
         </div>
       )}
 

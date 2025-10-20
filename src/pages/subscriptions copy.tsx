@@ -533,9 +533,89 @@ const Subscriptions = () => {
         </Card>
       )}
 
+      
+      {/* Tabs */}
+      <Card className="bg-white shadow-lg border-0">
+        <div className="flex border-b">
+          
+          <button
+            onClick={() => setActiveTab("plans")}
+            className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
+              activeTab === "plans"
+                ? "text-[#0088cc] border-b-2 border-[#0088cc] bg-[#0088cc]/5"
+                : "text-gray-600 hover:text-gray-800"
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            Subscription Plans
+            <Badge className="bg-blue-100 text-blue-800 ml-2">{subscriptionPlans.length}</Badge>
+          </button>
+          
+        </div>
+      </Card>
 
-      {/* Subscription Plans */}
-      <div className="space-y-6">
+      {/* Overview Tab */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          
+
+          {/* Plan Performance */}
+          <Card className="p-6 bg-white shadow-lg border-0">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Plan Performance</h3>
+            <div className="space-y-4">
+              {subscriptionPlans.map((plan) => (
+                <div key={plan.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-[#0088cc]/10 rounded-lg flex items-center justify-center">
+                      <Star className="w-5 h-5 text-[#0088cc]" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900">{plan.name}</h4>
+                        {plan.hasDiscount && (
+                          <Badge className="bg-orange-100 text-orange-800 text-xs">
+                            <Percent className="w-3 h-3 mr-1" />
+                            {plan.discountPercentage}% OFF
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {plan.hasDiscount ? (
+                          <>
+                            <span className="line-through text-gray-400">Rs {parseFloat(plan.price).toLocaleString()}</span>
+                            <span className="ml-2 font-semibold text-green-600">
+                              Rs{" "}
+                              {calculateDiscountedPrice(
+                                plan.price,
+                                plan.hasDiscount,
+                                plan.discountPercentage,
+                              ).toLocaleString()}
+                            </span>
+                            /{plan.interval}
+                          </>
+                        ) : (
+                          <>
+                            Rs {parseFloat(plan.price).toLocaleString()}/{plan.interval}
+                          </>
+                        )}{" "}
+                        • {plan.subscribers || 0} subscribers
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">Rs {(plan.revenue || 0).toLocaleString()}</p>
+                    <p className="text-sm text-gray-600">Total Revenue</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Plans Tab */}
+      {activeTab === "plans" && (
+        <div className="space-y-6">
           <Card className="p-6 bg-white shadow-lg border-0">
             <div className="flex items-center justify-between mb-6">
               <div>
